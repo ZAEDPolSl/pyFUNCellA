@@ -10,16 +10,16 @@ def show_labels(true_labels, predicted, binary_predicted, tsne, geneset_name, sc
         f, ax = plt.subplots(3, 1, sharey=True, sharex=True, figsize=(10,15))
         sns.scatterplot(ax=ax[1], x=tsne[0,:], y=tsne[1,:], hue=predicted)
         ax[1].set_title('Underlying groups')
-        ax[1].legend(loc="upper right")
+        ax[1].legend(loc='center left', bbox_to_anchor=(1.05, 0.5))
     # True labels   
     sns.scatterplot(ax=ax[0], x=tsne[0,:], y=tsne[1,:], hue=true_labels)
     ax[0].set_title('Original labels')
-    ax[0].legend(loc="upper right")
+    ax[0].legend(loc='center left', bbox_to_anchor=(1.05, 0.5))
     # binary labels
     binary_predicted = ["Non significant" if i == 0 else "Significant" for i in binary_predicted]
     sns.scatterplot(ax=ax[-1], x=tsne[0,:], y=tsne[1,:], hue=binary_predicted, palette=binary_colors)
     ax[-1].set_title('Significance')
-    ax[-1].legend(loc="upper right")
+    ax[-1].legend(loc='center left', bbox_to_anchor=(1.05, 0.5))
 
     plt.xlabel('tsne-1')
     plt.ylabel('tsne-2')
@@ -34,16 +34,16 @@ def show_classification(predicted, binary_predicted, tsne, geneset_name, score_n
         f, ax = plt.subplots(1, 1, sharey=True, sharex=True, figsize=(10,5))
         sns.scatterplot(ax=ax, x=tsne[0,:], y=tsne[1,:], hue=binary_predicted, palette=binary_colors)
         ax.set_title('Significance')
-        ax.legend(loc="upper right")
+        ax.legend(loc='center left', bbox_to_anchor=(1.05, 0.5))
         
     else:
         f, ax = plt.subplots(2, 1, sharey=True, sharex=True, figsize=(10,10))
         sns.scatterplot(ax=ax[0], x=tsne[0,:], y=tsne[1,:], hue=predicted)
         ax[0].set_title('Underlying groups')
-        ax[0].legend(loc="upper right")
+        ax[0].legend(loc='center left', bbox_to_anchor=(1.05, 0.5))
         sns.scatterplot(ax=ax[1], x=tsne[0,:], y=tsne[1,:], hue=binary_predicted, palette=binary_colors)
         ax[1].set_title('Significance')
-        ax[1].legend(loc="upper right")
+        ax[1].legend(loc='center left', bbox_to_anchor=(1.05, 0.5))
     plt.xlabel('tsne-1')
     plt.ylabel('tsne-2')
     f.suptitle(geneset_name)   
@@ -80,6 +80,7 @@ def show_difference(score1_predicted, score2_predicted, tsne, geneset_name, true
     if nrows == 3:
         ax0 = fig.add_subplot(gs[0, :])
         sns.scatterplot(ax=ax0, x=tsne[0,:], y=tsne[1,:], hue=true_labels)
+        ax0.legend(loc='center left', bbox_to_anchor=(1.05, 0.5))
         ax1 = fig.add_subplot(gs[nrows-2, 0], sharey = ax0, sharex = ax0)
     else:
         ax1 = fig.add_subplot(gs[nrows-2, 0])
@@ -138,6 +139,7 @@ def show_significance(score1_predicted, score2_predicted, tsne, geneset_name, tr
     if nrows == 3:
         ax0 = fig.add_subplot(gs[0, :])
         sns.scatterplot(ax=ax0, x=tsne[0,:], y=tsne[1,:], hue=true_labels)
+        ax0.legend(loc='center left', bbox_to_anchor=(1.05, 0.5))
         ax1 = fig.add_subplot(gs[nrows-2, 0], sharey = ax0, sharex = ax0)
     else:
         ax1 = fig.add_subplot(gs[nrows-2, 0])
