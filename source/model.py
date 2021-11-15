@@ -25,11 +25,9 @@ def choose_distribution(data):
         return GaussianMixture(1).fit(data)
     return _find_the_gmm(data, components=(2,10))
 
-def cluster_gmms(model): # no.
+def cluster_gmms(model):
     if model.n_components == 1:
         return np.array([0])
-    # if model.n_components == 2:
-    #     comp_group = [i for i in range(model.n_components)]
     else:
         features = np.append(model.weights_.reshape(-1, 1), 
                              model.means_.reshape(-1, 1), axis=1)
