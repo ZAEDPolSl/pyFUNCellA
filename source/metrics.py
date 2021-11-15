@@ -26,7 +26,7 @@ def _svd(geneset, data, genes):
     in_gs = data[genes_in_ds, :]
     if (in_gs.T == in_gs.T[0]).all():
         return np.zeros(data.shape[1])
-    gs_expression = PCA(n_components=1).fit_transform(in_gs)
+    gs_expression = PCA(n_components=1).fit_transform(in_gs.T)
     return gs_expression.flatten()
 
 def SVD(genesets, data, genes):
