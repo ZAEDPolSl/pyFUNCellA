@@ -2,60 +2,112 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 
-def show_labels(true_labels, predicted, binary_predicted, tsne, geneset_name, score_name="", save_dir="plots"):
-    binary_colors ={"Non significant": "#0C5AA6", "Significant": "#FF9700"}
-    if predicted is None:
-        f, ax = plt.subplots(2, 1, sharey=True, sharex=True, figsize=(12,15))
-    else:
-        f, ax = plt.subplots(3, 1, sharey=True, sharex=True, figsize=(12,15))
-        _ = sns.scatterplot(ax=ax[1], x=tsne[0,:], y=tsne[1,:], hue=predicted)
-        ax[1].set_title('Underlying groups')
-        ax[1].legend(loc='center left', bbox_to_anchor=(1.05, 0.5))
-    # True labels   
-    _ = sns.scatterplot(ax=ax[0], x=tsne[0,:], y=tsne[1,:], hue=true_labels)
-    ax[0].set_title('Original labels')
-    ax[0].legend(loc='center left', bbox_to_anchor=(1.05, 0.5))
-    # binary labels
-    binary_predicted = ["Non significant" if i == 0 else "Significant" for i in binary_predicted]
-    _ = sns.scatterplot(ax=ax[-1], x=tsne[0,:], y=tsne[1,:], hue=binary_predicted, palette=binary_colors)
-    ax[-1].set_title('Significance')
-    ax[-1].legend(loc='center left', bbox_to_anchor=(1.05, 0.5))
-
-    plt.xlabel('tsne-1')
-    plt.ylabel('tsne-2')
-    f.suptitle(geneset_name, fontsize=25)
-    f.set_facecolor('w')
-    plt.savefig(save_dir+"/show_labels_"+geneset_name + "_" + score_name + ".png")
+def show_predictions(binary_predicted, predicted, tsne, geneset_name, true_labels=None, score_name="score1", save_dir="plots"):
+    s1_sign = np.asarray(binary_predicted).astype(bool)
+    s1_nsign = (1-np.asarray(binary_predicted)).astype(bool)
     
-def show_classification(predicted, binary_predicted, tsne, geneset_name, score_name="", save_dir="plots"):
-    # binary labels
-    binary_predicted = ["Non significant" if i == 0 else "Significant" for i in binary_predicted]
-    binary_colors ={"Non significant": "#0C5AA6", "Significant": "#FF9700"}
-    if predicted is None:
-        f, ax = plt.subplots(1, 1, sharey=True, sharex=True, figsize=(10,5))
-        _ = sns.scatterplot(ax=ax, x=tsne[0,:], y=tsne[1,:], hue=binary_predicted, palette=binary_colors)
-        ax.set_title('Significance')
-        ax.legend(loc='center left', bbox_to_anchor=(1.05, 0.5))
+    if true_labels is None:
+        nrows = 2
+        titles = [score_name, "Underlying groups"]
+    else:
+        nrows=3
+        titles = ["Original", score_name, "Underlying groups"]
+        
+    fig, big_axes = plt.subplots( figsize=(12, nrows*4) , nrows=nrows, ncols=1, sharey=True) 
+
+    for row, big_ax in enumerate(big_axes, start=1):
+        big_ax.set_title(titles[row-1], fontsize=16)
+
+        big_ax.tick_params(labelcolor=(1.,1.,1., 0.0), top='off', bottom='off', left='off', right='off')
+        big_ax._frameon = False
+    
+    gs = fig.add_gridspec(nrows,2)
+        
+    if nrows == 3:
+        ax0 = fig.add_subplot(gs[0, :])
+        sns.scatterplot(ax=ax0, x=tsne[0,:], y=tsne[1,:], hue=true_labels)
+        ax0.legend(loc='center left', bbox_to_anchor=(1.05, 0.5))
+        ax1 = fig.add_subplot(gs[nrows-2, 0], sharey = ax0, sharex = ax0)
+    else:
+        ax1 = fig.add_subplot(gs[nrows-2, 0])
+        ax1.set_xlim(np.min(tsne, axis=1)[0]-1, np.max(tsne, axis=1)[0]+1)
+        ax1.set_ylim(np.min(tsne, axis=1)[1]-1, np.max(tsne, axis=1)[1]+1)
+    _ = sns.scatterplot(ax=ax1, x=tsne[0, s1_sign],
+                    y=tsne[1, s1_sign], color="#FF9700")
+
+
+    ax2 = fig.add_subplot(gs[nrows-2, 1], sharey = ax1, sharex = ax1)
+    _ = sns.scatterplot(ax=ax2, x=tsne[0, s1_nsign],
+                y=tsne[1, s1_nsign], color="#0C5AA6")
+
+    ax3 = fig.add_subplot(gs[nrows-1, :], sharey = ax1, sharex = ax1)
+    _ = sns.scatterplot(ax=ax3, x=tsne[0, :],
+                y=tsne[1, :], hue=predicted)
+
+    ax1.set_title("Significant")
+    ax2.set_title("Non significant")
+
+    fig.set_facecolor('w')
+    plt.suptitle(geneset_name, fontsize=25)
+    plt.tight_layout()
+    plt.savefig(save_dir+"/show_predictions_"+geneset_name + "_" + score_name  + ".png")
+
+def show_labels(binary_predicted, true_labels, tsne, geneset_name, score_name, save_dir):
+    s1_sign = np.asarray(binary_predicted).astype(bool)
+    s1_nsign = (1-np.asarray(binary_predicted)).astype(bool)
+    
+    if true_labels is None:
+        nrows = 1
+        titles = [score_name]
+        fig, big_axes = plt.subplots( figsize=(12, nrows*4) , nrows=nrows, ncols=1, sharey=True)
+        big_axes.tick_params(labelcolor=(1.,1.,1., 0.0), top='off', bottom='off', left='off', right='off')
+        big_axes._frameon = False
         
     else:
-        f, ax = plt.subplots(2, 1, sharey=True, sharex=True, figsize=(10,10))
-        _ = sns.scatterplot(ax=ax[0], x=tsne[0,:], y=tsne[1,:], hue=predicted)
-        ax[0].set_title('Underlying groups')
-        ax[0].legend(loc='center left', bbox_to_anchor=(1.05, 0.5))
-        _ = sns.scatterplot(ax=ax[1], x=tsne[0,:], y=tsne[1,:], hue=binary_predicted, palette=binary_colors)
-        ax[1].set_title('Significance')
-        ax[1].legend(loc='center left', bbox_to_anchor=(1.05, 0.5))
-    plt.xlabel('tsne-1')
-    plt.ylabel('tsne-2')
-    f.suptitle(geneset_name, fontsize=25)   
-    f.set_facecolor('w')
-    plt.savefig(save_dir+"/show_classification_"+geneset_name + "_" + score_name + ".png")
+        nrows=2
+        titles = ["Original", score_name]
+        
+        fig, big_axes = plt.subplots( figsize=(12, nrows*4) , nrows=nrows, ncols=1, sharey=True) 
+
+        for row, big_ax in enumerate(big_axes, start=1):
+            big_ax.set_title(titles[row-1], fontsize=16)
+
+            big_ax.tick_params(labelcolor=(1.,1.,1., 0.0), top='off', bottom='off', left='off', right='off')
+            big_ax._frameon = False
+    
+    gs = fig.add_gridspec(nrows,2)
+        
+    if nrows == 2:
+        ax0 = fig.add_subplot(gs[0, :])
+        sns.scatterplot(ax=ax0, x=tsne[0,:], y=tsne[1,:], hue=true_labels)
+        ax0.legend(loc='center left', bbox_to_anchor=(1.05, 0.5))
+        ax1 = fig.add_subplot(gs[1, 0], sharey = ax0, sharex = ax0)
+    else:
+        ax1 = fig.add_subplot(gs[0, 0])
+        ax1.set_xlim(np.min(tsne, axis=1)[0]-1, np.max(tsne, axis=1)[0]+1)
+        ax1.set_ylim(np.min(tsne, axis=1)[1]-1, np.max(tsne, axis=1)[1]+1)
+    _ = sns.scatterplot(ax=ax1, x=tsne[0, s1_sign],
+                    y=tsne[1, s1_sign], color="#FF9700")
+
+
+    ax2 = fig.add_subplot(gs[nrows-1, 1], sharey = ax1, sharex = ax1)
+    _ = sns.scatterplot(ax=ax2, x=tsne[0, s1_nsign],
+                y=tsne[1, s1_nsign], color="#0C5AA6")
+
+    ax1.set_title("Significant")
+    ax2.set_title("Non significant")
+
+    fig.set_facecolor('w')
+    plt.suptitle(geneset_name, fontsize=25)
+    plt.tight_layout()
+    plt.savefig(save_dir+"/show_labels_"+geneset_name + "_" + score_name  + ".png")
+
     
 def plot_results(binary_predicted, tsne, geneset_name, predicted=None, true_labels=None, score_name="", save_dir="plots"):
-    if true_labels is None:
-        show_classification(predicted, binary_predicted, tsne, geneset_name, score_name, save_dir)
+    if predicted is None:
+        show_labels(binary_predicted, true_labels, tsne, geneset_name, score_name, save_dir)
     else:
-        show_labels(true_labels, predicted, binary_predicted, tsne, geneset_name, score_name, save_dir)
+        show_predictions(binary_predicted, predicted, tsne, geneset_name, true_labels, score_name, save_dir)
         
 def show_difference(score1_predicted, score2_predicted, tsne, geneset_name, true_labels=None, score_name1="score1", score_name2="score2", save_dir="plots"):
     both_significant = np.bitwise_and(np.asarray(score2_predicted), 
@@ -177,3 +229,5 @@ def show_significance(score1_predicted, score2_predicted, tsne, geneset_name, tr
     plt.suptitle(geneset_name, fontsize=25)
     plt.tight_layout()
     plt.savefig(save_dir+"/show_significance_"+geneset_name + "_" + score_name1 + "_"+score_name2 + ".png")
+    
+    
