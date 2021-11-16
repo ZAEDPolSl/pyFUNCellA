@@ -5,7 +5,7 @@ import math
 import seaborn as sns
 from .model import get_predictions
 
-def plot_densities(data, model, comp_groups, score_name, geneset_name, save_dir="plots"):
+def plot_densities(data, model, comp_groups, score_name, geneset_name, save_dir="plots", file_only=True):
     comp_colors ={"Non significant": "#0C5AA6", "Significant": "#FF9700"}
     label_meaning = ["Non significant", "Significant"]
     f = plt.figure(figsize=(7,5))
@@ -35,8 +35,10 @@ def plot_densities(data, model, comp_groups, score_name, geneset_name, save_dir=
                 palette = comp_colors)
     f.set_facecolor('w')
     plt.savefig(save_dir+"/dens_"+geneset_name + "_" + score_name + ".png")
+    if file_only:
+        plt.close()
     
-def compare_with_categorical(score1, model, comp_groups, score_name1, geneset_name, score2, thr, score_name2, save_dir="plots"):
+def compare_with_categorical(score1, model, comp_groups, score_name1, geneset_name, score2, thr, score_name2, save_dir="plots", file_only=True):
     comp_colors ={"Non significant": "#0C5AA6", "Significant": "#FF9700"}
     label_meaning = ["Non significant", "Significant"]
     f = plt.figure(figsize=(7,10))
@@ -79,3 +81,5 @@ def compare_with_categorical(score1, model, comp_groups, score_name1, geneset_na
     f.set_facecolor('w')
     plt.suptitle(geneset_name, fontsize=25)
     plt.savefig(save_dir+"/dens_"+geneset_name + "_" + score_name1 + "_"+score_name2 + ".png")
+    if file_only:
+        plt.close()

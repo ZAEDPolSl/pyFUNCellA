@@ -2,7 +2,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 
-def show_predictions(binary_predicted, predicted, tsne, geneset_name, true_labels=None, score_name="score1", save_dir="plots"):
+def show_predictions(binary_predicted, predicted, tsne, geneset_name, true_labels=None, score_name="score1", save_dir="plots", file_only=True):
     s1_sign = np.asarray(binary_predicted).astype(bool)
     s1_nsign = (1-np.asarray(binary_predicted)).astype(bool)
     
@@ -51,8 +51,10 @@ def show_predictions(binary_predicted, predicted, tsne, geneset_name, true_label
     plt.suptitle(geneset_name, fontsize=25)
     plt.tight_layout()
     plt.savefig(save_dir+"/show_predictions_"+geneset_name + "_" + score_name  + ".png")
+    if file_only:
+        plt.close()
 
-def show_labels(binary_predicted, true_labels, tsne, geneset_name, score_name, save_dir):
+def show_labels(binary_predicted, true_labels, tsne, geneset_name, score_name, save_dir, file_only=True):
     s1_sign = np.asarray(binary_predicted).astype(bool)
     s1_nsign = (1-np.asarray(binary_predicted)).astype(bool)
     
@@ -101,6 +103,8 @@ def show_labels(binary_predicted, true_labels, tsne, geneset_name, score_name, s
     plt.suptitle(geneset_name, fontsize=25)
     plt.tight_layout()
     plt.savefig(save_dir+"/show_labels_"+geneset_name + "_" + score_name  + ".png")
+    if file_only:
+        plt.close()
 
     
 def plot_results(binary_predicted, tsne, geneset_name, predicted=None, true_labels=None, score_name="", save_dir="plots"):
@@ -109,7 +113,7 @@ def plot_results(binary_predicted, tsne, geneset_name, predicted=None, true_labe
     else:
         show_predictions(binary_predicted, predicted, tsne, geneset_name, true_labels, score_name, save_dir)
         
-def show_difference(score1_predicted, score2_predicted, tsne, geneset_name, true_labels=None, score_name1="score1", score_name2="score2", save_dir="plots"):
+def show_difference(score1_predicted, score2_predicted, tsne, geneset_name, true_labels=None, score_name1="score1", score_name2="score2", save_dir="plots", file_only=True):
     both_significant = np.bitwise_and(np.asarray(score2_predicted), 
                                       np.asarray(score1_predicted)).astype(bool)
     score_2_sign = np.bitwise_and(np.asarray(score2_predicted),
@@ -170,8 +174,10 @@ def show_difference(score1_predicted, score2_predicted, tsne, geneset_name, true
     plt.suptitle(geneset_name, fontsize=25)
     plt.tight_layout()
     plt.savefig(save_dir+"/show_difference_"+geneset_name + "_" + score_name1 + "_"+score_name2 + ".png")
+    if file_only:
+        plt.close()
 
-def show_significance(score1_predicted, score2_predicted, tsne, geneset_name, true_labels=None, score_name1="score1", score_name2="score2", save_dir="plots"):
+def show_significance(score1_predicted, score2_predicted, tsne, geneset_name, true_labels=None, score_name1="score1", score_name2="score2", save_dir="plots", file_only=True):
     s1_sign = np.asarray(score1_predicted).astype(bool)
     s2_sign = np.asarray(score2_predicted).astype(bool)
     s1_nsign = (1-np.asarray(score1_predicted)).astype(bool)
@@ -229,5 +235,7 @@ def show_significance(score1_predicted, score2_predicted, tsne, geneset_name, tr
     plt.suptitle(geneset_name, fontsize=25)
     plt.tight_layout()
     plt.savefig(save_dir+"/show_significance_"+geneset_name + "_" + score_name1 + "_"+score_name2 + ".png")
+    if file_only:
+        plt.close()
     
     
