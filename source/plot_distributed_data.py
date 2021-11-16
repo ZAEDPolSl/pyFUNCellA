@@ -21,7 +21,7 @@ def plot_densities(data, model, comp_groups, score_name, geneset_name, save_dir=
         
     plt.ylabel('Frequency')
     plt.xlabel(score_name)
-    plt.title(geneset_name, fontsize=25)
+    plt.title(geneset_name, fontsize=18)
     
     for i in range(model.n_components):
         mu = model.means_[i, 0]
@@ -79,7 +79,7 @@ def compare_with_categorical(score1, model, comp_groups, score_name1, geneset_na
     _ = sns.rugplot(score2, height=-.02, clip_on=False, hue=score_2,
                 palette = comp_colors, ax=ax2)
     f.set_facecolor('w')
-    plt.suptitle(geneset_name, fontsize=25)
+    plt.suptitle(geneset_name, fontsize=18)
     plt.savefig(save_dir+"/dens_"+geneset_name + "_" + score_name1 + "_"+score_name2 + ".png")
     if file_only:
         plt.close()

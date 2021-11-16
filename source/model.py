@@ -2,6 +2,7 @@ import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.mixture import GaussianMixture
 from scipy import stats
+import warnings
 
 def _find_the_gmm(data, components=(2,10)):
     n = data.shape[0]
@@ -11,12 +12,16 @@ def _find_the_gmm(data, components=(2,10)):
         raise ValueError("The minimal components' number cannot be bigger than the maximal one")
     best_model = GaussianMixture(components[0]).fit(data)
     bic = best_model.bic(data)
+
     for i in range(components[0]+1, components[1]+1):
         model = GaussianMixture(i).fit(data)
         cur_bic = model.bic(data)
         if cur_bic < bic:
+            best_model = model            
+            if bic - cur_bic > 3:
+                bic = cur_bic
+                break
             bic = cur_bic
-            best_model = model
     return best_model
 
 def choose_distribution(data):
@@ -33,7 +38,7 @@ def cluster_gmms(model):
                              model.means_.reshape(-1, 1), axis=1)
         features = np.append(features,
                              model.covariances_.reshape(-1, 1), axis=1)
-        comp_group =KMeans(2).fit_predict(features)
+        comp_group = KMeans(2).fit_predict(features)
     if comp_group[np.argmax(model.means_)] == 0:
         comp_group = 1 - comp_group
     return comp_group
