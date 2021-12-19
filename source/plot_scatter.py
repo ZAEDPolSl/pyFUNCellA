@@ -50,6 +50,8 @@ def show_predictions(binary_predicted, predicted, tsne, geneset_name, true_label
     fig.set_facecolor('w')
     plt.suptitle(geneset_name, fontsize=25)
     plt.tight_layout()
+    geneset_name = geneset_name.replace("/", "_")
+    geneset_name = geneset_name.replace(":", "_")
     plt.savefig(save_dir+"/show_predictions_"+geneset_name + "_" + score_name  + ".png")
     if file_only:
         plt.close()
@@ -102,6 +104,8 @@ def show_labels(binary_predicted, true_labels, tsne, geneset_name, score_name, s
     fig.set_facecolor('w')
     plt.suptitle(geneset_name, fontsize=25)
     plt.tight_layout()
+    geneset_name = geneset_name.replace("/", "_")
+    geneset_name = geneset_name.replace(":", "_")
     plt.savefig(save_dir+"/show_labels_"+geneset_name + "_" + score_name  + ".png")
     if file_only:
         plt.close()
@@ -173,6 +177,8 @@ def show_difference(score1_predicted, score2_predicted, tsne, geneset_name, true
     fig.set_facecolor('w')
     plt.suptitle(geneset_name, fontsize=25)
     plt.tight_layout()
+    geneset_name = geneset_name.replace("/", "_")
+    geneset_name = geneset_name.replace(":", "_")
     plt.savefig(save_dir+"/show_difference_"+geneset_name + "_" + score_name1 + "_"+score_name2 + ".png")
     if file_only:
         plt.close()
@@ -234,6 +240,8 @@ def show_significance(score1_predicted, score2_predicted, tsne, geneset_name, tr
     fig.set_facecolor('w')
     plt.suptitle(geneset_name, fontsize=25)
     plt.tight_layout()
+    geneset_name = geneset_name.replace("/", "_")
+    geneset_name = geneset_name.replace(":", "_")
     plt.savefig(save_dir+"/show_significance_"+geneset_name + "_" + score_name1 + "_"+score_name2 + ".png")
     if file_only:
         plt.close()
