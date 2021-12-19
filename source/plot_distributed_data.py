@@ -4,14 +4,18 @@ import scipy.stats as stats
 import math
 import seaborn as sns
 from .model import get_predictions
+from .legend_handler import move_legend
 
 def plot_densities(data, model, comp_groups, score_name, geneset_name, save_dir="plots", file_only=True):
     comp_colors ={"Non significant": "#0C5AA6", "Significant": "#FF9700"}
     label_meaning = ["Non significant", "Significant"]
-    f = plt.figure(figsize=(7,5))
+    f, ax = plt.subplots(figsize=(7,5))
 
     labels, binary_labels = get_predictions(model, comp_groups, data)
     comp_colors_density = "#808080"
+    
+    ns_count = (len(binary_labels)-sum(binary_labels))
+    s_count =  sum(binary_labels)
     binary_labels = [label_meaning[label] for label in binary_labels ]        
         
     _ = sns.histplot(data, color= "#B0B0B0", alpha=0.25, kde=False, stat='density')
@@ -34,6 +38,9 @@ def plot_densities(data, model, comp_groups, score_name, geneset_name, save_dir=
         
     _ = sns.rugplot(data, height=-.02, clip_on=False, hue=binary_labels,
                 palette = comp_colors)
+    
+    move_legend(ax, "upper right", [ns_count, s_count])
+    
     f.set_facecolor('w')
     geneset_name = geneset_name.replace("/", "_")
     geneset_name = geneset_name.replace(":", "_")
@@ -49,6 +56,8 @@ def compare_with_categorical(score1, model, comp_groups, score_name1, geneset_na
     
     labels, binary_labels = get_predictions(model, comp_groups, score1)
     comp_colors_density = "#808080"
+    ns_count1 = (len(binary_labels)-sum(binary_labels))
+    s_count1 =  sum(binary_labels)
     binary_labels = [label_meaning[label] for label in binary_labels ]        
 
         
@@ -73,6 +82,8 @@ def compare_with_categorical(score1, model, comp_groups, score_name1, geneset_na
                 palette = comp_colors, ax=ax1)
     
     score_2 = (score2 > thr).astype(int)
+    ns_count2 = (len(score_2)-sum(score_2))
+    s_count2 =  sum(score_2)
     score_2 = [label_meaning[label] for label in score_2.tolist()]
 
     ax2 = plt.subplot(212)
@@ -83,6 +94,10 @@ def compare_with_categorical(score1, model, comp_groups, score_name1, geneset_na
     _ = sns.kdeplot(score2, linewidth=2, color='k', ax=ax2)
     _ = sns.rugplot(score2, height=-.02, clip_on=False, hue=score_2,
                 palette = comp_colors, ax=ax2)
+    
+    move_legend(ax1, "upper right", [ns_count1, s_count1])
+    move_legend(ax2, "upper right", [ns_count2, s_count2])   
+    
     f.set_facecolor('w')
     plt.suptitle(geneset_name, fontsize=18)
     geneset_name = geneset_name.replace("/", "_")
@@ -92,7 +107,8 @@ def compare_with_categorical(score1, model, comp_groups, score_name1, geneset_na
         plt.close()
         
 def compare_2_categorical(score1, thr1, score_name1, geneset_name, score2, thr2, score_name2, save_dir="plots", file_only=True, take_smaller_1=True):
-    # comp_colors = {"Non significant": "#0C5AA6", "Significant": "#FF9700"}
+    comp_colors ={"Non significant": "#0C5AA6", "Significant": "#FF9700"}
+    label_meaning = ["Non significant", "Significant"]
     f = plt.figure(figsize=(7,10))
     
     comp_colors_density = "#808080"     
@@ -103,10 +119,8 @@ def compare_2_categorical(score1, thr1, score_name1, geneset_name, score2, thr2,
     else:
         score_1 = (score1 > thr1).astype(int)
         
-    ns_count = (len(score_1)-sum(score_1))
-    s_count =  sum(score_1)
-    label_meaning = ["Non significant: "+str(ns_count), "Significant: "+str(s_count)]
-    comp_colors = {"Non significant: "+ str(ns_count) : "#0C5AA6", "Significant: " + str(s_count): "#FF9700"}
+    ns_count1 = (len(score_1)-sum(score_1))
+    s_count1 =  sum(score_1)
     score_1 = [label_meaning[label] for label in score_1.tolist()]
     
     ax1 = plt.subplot(211)
@@ -120,10 +134,8 @@ def compare_2_categorical(score1, thr1, score_name1, geneset_name, score2, thr2,
 
     # score 2
     score_2 = (score2 > thr2).astype(int)
-    ns_count = (len(score_2)-sum(score_2))
-    s_count =  sum(score_2)
-    label_meaning = ["Non significant: "+str(ns_count), "Significant: "+str(s_count)]
-    comp_colors = {"Non significant: "+ str(ns_count) : "#0C5AA6", "Significant: " + str(s_count): "#FF9700"}
+    ns_count2 = (len(score_2)-sum(score_2))
+    s_count2 =  sum(score_2)
     score_2 = [label_meaning[label] for label in score_2.tolist()]
 
     ax2 = plt.subplot(212)
@@ -134,6 +146,9 @@ def compare_2_categorical(score1, thr1, score_name1, geneset_name, score2, thr2,
     _ = sns.kdeplot(score2, linewidth=2, color=comp_colors_density, ax=ax2)
     _ = sns.rugplot(score2, height=-.02, clip_on=False, hue=score_2,
                 palette = comp_colors, ax=ax2)
+    
+    move_legend(ax1, "upper right", [ns_count1, s_count1])
+    move_legend(ax2, "upper right", [ns_count2, s_count2])
     
     f.set_facecolor('w')
     plt.suptitle(geneset_name, fontsize=18)
@@ -147,12 +162,15 @@ def plot_cat_density(data, thr, score_name, geneset_name, save_dir="plots", file
     # take_smaller = True for p-values 
     comp_colors ={"Non significant": "#0C5AA6", "Significant": "#FF9700"}
     label_meaning = ["Non significant", "Significant"]
-    f = plt.figure(figsize=(7,5))
+    f, ax = plt.subplots(figsize=(7,5))
     
     if (take_smaller):
         binary_labels = (data < thr).astype(int)
     else:
         binary_labels = (data > thr).astype(int)
+        
+    ns_count = (len(binary_labels)-sum(binary_labels))
+    s_count =  sum(binary_labels)
     binary_labels = [label_meaning[label] for label in binary_labels.tolist()]
     
     comp_colors_density = "#808080"        
@@ -163,10 +181,12 @@ def plot_cat_density(data, thr, score_name, geneset_name, save_dir="plots", file
     plt.ylabel('Frequency')
     plt.xlabel(score_name)
     plt.title(geneset_name, fontsize=18)
-    
         
     _ = sns.rugplot(data, height=-.02, clip_on=False, hue=binary_labels,
                 palette = comp_colors)
+    
+    move_legend(ax, "upper right", [ns_count, s_count])
+    
     f.set_facecolor('w')
     geneset_name = geneset_name.replace("/", "_")
     geneset_name = geneset_name.replace(":", "_")
