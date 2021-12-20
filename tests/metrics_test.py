@@ -2,6 +2,7 @@ import pytest
 import pandas as pd
 import numpy as np
 import source.metrics as metrics
+from statsmodels.stats.multitest import multipletests
 
 def test_rank_genes():
     x = np.array([[0, 2],[3,5]])
@@ -86,8 +87,9 @@ def test_pval():
                      [6, 3, 6, 3, 5, 2],
                      [3, 6, 4, 1, 6, 1]])
     cerno, auc, pval = metrics._cerno(genesets["geneset"], data, genes)
-    cerno_expected = 0.4481942337398913
-    assert 0 == pval[0]
+    pval_expected = [0.44819423, 0.86148045, 0.86148045, 0.86148045, 0.40710257, 0.86148045]
+    _, qval_expected, _, _ = multipletests(pval_expected, alpha=0.05, method='fdr_tsbh')
+    assert np.isclose(pval, qval_expected, atol=10e-4).all()
     
 def test_cerno_format():
     genes = ["a", "b", "c", "d", "e", "g"]
