@@ -57,7 +57,7 @@ def test_cerno_auc():
                      [5, 1, 1, 6, 4, 3],
                      [6, 3, 6, 3, 5, 2],
                      [3, 6, 4, 1, 6, 1]])
-    cerno, auc = metrics._cerno(genesets["geneset"], data, genes)
+    cerno, auc, pval = metrics._cerno(genesets["geneset"], data, genes)
     auc_expected = np.array([2/3, 1/3, 2/9, 3/9, 7/9, 2/9])
     assert np.array_equal(auc_expected, auc)
     
@@ -70,9 +70,24 @@ def test_cerno():
                      [5, 1, 1, 6, 4, 3],
                      [6, 3, 6, 3, 5, 2],
                      [3, 6, 4, 1, 6, 1]])
-    cerno, auc = metrics._cerno(genesets["geneset"], data, genes)
+    cerno, auc, pval = metrics._cerno(genesets["geneset"], data, genes)
+    cerno_expected = np.array([5.7807, 2.5619, 2.5619, 2.5619, 6.1454, 2.5619])
+    assert np.isclose(cerno_expected, cerno, atol=10e-4).all()  
+    
+    
+def test_pval():
+    # change into corrected_pvals
+    genes = ["a", "b", "c", "d", "e", "g"]
+    genesets = {"geneset": ['a', 'b', 'e', 'f']}
+    data = np.array([[2, 4, 5, 4, 1, 6],
+                     [1, 5, 2, 5, 2, 5],
+                     [4, 2, 3, 2, 3, 4],
+                     [5, 1, 1, 6, 4, 3],
+                     [6, 3, 6, 3, 5, 2],
+                     [3, 6, 4, 1, 6, 1]])
+    cerno, auc, pval = metrics._cerno(genesets["geneset"], data, genes)
     cerno_expected = 0.4481942337398913
-    assert cerno_expected == cerno[0]
+    assert 0 == pval[0]
     
 def test_cerno_format():
     genes = ["a", "b", "c", "d", "e", "g"]
@@ -83,7 +98,8 @@ def test_cerno_format():
                      [5, 1, 1, 6, 4, 3],
                      [6, 3, 6, 3, 5, 2],
                      [3, 6, 4, 1, 6, 1]])
-    cerno, auc = metrics._cerno(genesets["geneset"], data, genes)
+    cerno, auc, pval = metrics._cerno(genesets["geneset"], data, genes)
     auc_expected = np.array([0, 0, 0, 0, 0, 0])
     assert np.array_equal(auc_expected, auc)
     assert np.array_equal(auc_expected, cerno)
+    assert np.array_equal(np.array([1, 1, 1, 1, 1, 1]), pval)
