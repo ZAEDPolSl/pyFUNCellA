@@ -5,6 +5,7 @@ from statsmodels.stats.multitest import multipletests
 from tqdm import tqdm
 
 def _z(geneset, data, genes, alpha=0.05, gs_name=""):
+    # should not be run on its own because of the normalisation in function
     genes_in_ds = [gene in geneset for gene in genes]
     N = len(genes)
     in_gs = data[genes_in_ds, :]
@@ -12,12 +13,14 @@ def _z(geneset, data, genes, alpha=0.05, gs_name=""):
     if N <= N_gs or N_gs==0:
         print("Incorrect geneset format:", gs_name)
         return np.ones(data.shape[1]), np.ones(data.shape[1]), np.zeros(data.shape[1])
-    z = np.sum(stats.norm.cdf(in_gs/N), axis=0)/(N_gs**(1/2))
+    z = np.sum(in_gs, axis=0)/(N_gs**(1/2))
+    
     pvals = stats.norm.sf(z)
     _, qvals, _, _ = multipletests(pvals, alpha=alpha, method='fdr_tsbh')
     return pvals, qvals, z
 
 def Z(genesets, data, genes, alpha=0.05): # ordered gene names for each patient, genesets
+    data = stats.norm.cdf(data.transpose(), loc=np.mean(data, axis=1), scale=np.std(data, axis=1, ddof=1)).transpose()
     pval = np.empty((len(genesets), data.shape[1]))
     qval = np.empty((len(genesets), data.shape[1]))
     z = np.empty((len(genesets), data.shape[1]))
