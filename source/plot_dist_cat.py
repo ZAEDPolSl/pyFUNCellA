@@ -39,7 +39,7 @@ def plot_cat_density(data, thr, score_name, geneset_name, save_dir="plots", file
     if file_only:
         plt.close()
         
-def compare_2_categorical(score1, thr1, score_name1, geneset_name, score2, thr2, score_name2, save_dir="plots", file_only=True, take_smaller_1=True):
+def compare_2_categorical_dist(score1, thr1, score_name1, geneset_name, score2, thr2, score_name2, save_dir="plots", file_only=True, take_smaller_1=True):
     comp_colors ={"Non significant": "#0C5AA6", "Significant": "#FF9700"}
     label_meaning = ["Non significant", "Significant"]
     f = plt.figure(figsize=(7,10))
@@ -93,7 +93,7 @@ def compare_2_categorical(score1, thr1, score_name1, geneset_name, score2, thr2,
         
 def visualize_dist_for_cat(gs_name, score1, score2, thr1, thr2, name1, name2, save_dir):
     if thr2 is not None:
-        compare_2_categorical(score1, thr1, name1, gs_name, 
+        compare_2_categorical_dist(score1, thr1, name1, gs_name, 
                                    score2, thr2, name2, 
                                    save_dir=save_dir, file_only=True)
     else:
