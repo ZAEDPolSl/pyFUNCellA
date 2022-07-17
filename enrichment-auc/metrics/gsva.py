@@ -12,7 +12,7 @@ def _calculate_gene_zscores(x, batch_size=30):
         print("Subtracting..")
         y = -y + x[:, :, None]
         print("Calculating probabilities...")
-        y =stats.norm.cdf(y)
+        y = stats.norm.cdf(y)
         print("Calculating the means...")
         results = np.mean(y, axis=-1)
     else:
@@ -23,10 +23,16 @@ def _calculate_gene_zscores(x, batch_size=30):
             y = np.repeat(part, part.shape[1], axis=0)
             y = y.reshape((part.shape[0], part.shape[1], part.shape[1]))
             y = -y + part[:, :, None]
-            y =stats.norm.cdf(y)
+            y = stats.norm.cdf(y)
             results[idx:idx+part.shape[0], :] = np.mean(y, axis=-1)
             idx += part.shape[0]
     return results
+
+def _calculate_gene_poissons(x):
+    x = x.astype(float)
+    for i in range(x.shape[0]):
+        x[i, :] = stats.poisson.cdf(x[i, :].reshape((x.shape[1], 1)), x[i, :]+0.5).mean(axis=1)
+    return x
 
 def _rank_expressions(phenotype_expressions):
     ranks = (-phenotype_expressions).argsort(axis=0).argsort(axis=0) + 1
@@ -39,19 +45,21 @@ def _get_miss_increment(genes_in_ds, genes):
     increment = (-1)/(N-n)
     return increment
 
-def get_ranks(data, genes):
+def get_ranks(data, genes, datatype="single_cell"):
     print("Transforming the geneset...\n")
-    bandwidths = (np.std(data, axis=1)/4)[:, None]
-    if np.where(bandwidths == 0)[0].shape[0] != 0:
-        good_indices = np.where(bandwidths != 0)[0]
-        data = data[good_indices]
-        bandwidths = bandwidths[good_indices]
-        genes = [genes[i] for i in good_indices.tolist()]
-        print("Some of the genes had 0 standard deviation. Removing them from the dataset.")
-    
-    # divide each row by its bandwidth
-    data = data/bandwidths
-    transformed = _calculate_gene_zscores(data)
+    if datatype == "single_cell":
+        transformed = _calculate_gene_poissons(data)
+    else:
+        bandwidths = (np.std(data, axis=1)/4)[:, None]
+        if np.where(bandwidths == 0)[0].shape[0] != 0:
+            good_indices = np.where(bandwidths != 0)[0]
+            data = data[good_indices]
+            bandwidths = bandwidths[good_indices]
+            genes = [genes[i] for i in good_indices.tolist()]
+            print("Some of the genes had 0 standard deviation. Removing them from the dataset.")
+        # divide each row by its bandwidth
+        data = data/bandwidths
+        transformed = _calculate_gene_zscores(data)
     print("Getting the ranks...\n")
     ranks = _rank_expressions(transformed)
     return ranks, genes
