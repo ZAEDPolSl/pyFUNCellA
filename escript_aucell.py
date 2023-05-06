@@ -1,13 +1,11 @@
-import pandas as pd
-import numpy as np
-from tqdm import tqdm
-from enrichment_auc.distributions import (
-    find_distribution,
-    group_distributions,
-    find_grouped_dist_thresholds,
-)
 import json
-import sys
+
+import numpy as np
+import pandas as pd
+from tqdm import tqdm
+
+from enrichment_auc.distributions import (
+    find_distribution, find_grouped_dist_thresholds, group_distributions)
 
 
 def pipeline_for_dist(score, geneset_name):
@@ -30,25 +28,16 @@ def pipeline_for_dist(score, geneset_name):
     )
 
 
-score_names = [
-    "z",
-    "gsva",
-    "cerno_auc",
-    "ratios",
-    "vision",
-    "svd",
-    "sparse_pca",
-]  # all scores to run for each data type "AUCell",
+score_names = ["ft", "dino", "log2", "raw_data", "sctrans", "seurat"]  # data types
 
 if __name__ == "__main__":
-    data_type = sys.argv[1]
+    data_type = "AUCell"
     print(data_type)
     for score_name in tqdm(score_names):
         print(score_name)
         # get scores
         scores = pd.read_csv(
-            "enrichment_stuff/data/" + data_type + "/" + score_name + ".csv",
-            index_col=0,
+            "enrichment_stuff/data/AUCell/" + score_name + "/AUCell.csv", index_col=0
         )
         gs_names = scores.index.values.tolist()
         scores = scores.to_numpy()
@@ -68,6 +57,7 @@ if __name__ == "__main__":
                 localizer_gmm,
                 localizer_kmeans,
             ) = pipeline_for_dist(score, gs_name)
+
             del distributions["TIC"], distributions["l_lik"]
             distributions["weights"] = (distributions["weights"]).tolist()
             distributions["mu"] = (distributions["mu"]).tolist()
@@ -81,6 +71,7 @@ if __name__ == "__main__":
                 scores_thr_kmeans.loc[gs_name] = thresholds_kmeans[-1]
             else:
                 scores_thr_kmeans.loc[gs_name] = np.nan
+
             scores_dist.append(distributions)
 
             gmm_thrs[gs_name] = thresholds_gmm.tolist()
@@ -92,43 +83,33 @@ if __name__ == "__main__":
             locs_kmeans.append(localizer_kmeans)
 
         scores_thr.to_csv(
-            "enrichment_stuff/data/" + data_type + "/" + score_name + "_gmm_thr.csv"
+            "enrichment_stuff/data/AUCell/" + score_name + "/AUCell_gmm_thr.csv"
         )
         scores_thr_kmeans.to_csv(
-            "enrichment_stuff/data/" + data_type + "/" + score_name + "_kmeans_thr.csv"
+            "enrichment_stuff/data/AUCell/" + score_name + "/AUCell_kmeans_thr.csv"
         )
 
         with open(
-            "enrichment_stuff/data/" + data_type + "/" + score_name + "_gmm_loc.json",
-            "w",
+            "enrichment_stuff/data/AUCell/" + score_name + "/AUCell_gmm_loc.json", "w"
         ) as fout:
             json.dump(locs_gmm, fout)
         with open(
-            "enrichment_stuff/data/"
-            + data_type
-            + "/"
-            + score_name
-            + "_kmeans_loc.json",
+            "enrichment_stuff/data/AUCell/" + score_name + "/AUCell_kmeans_loc.json",
             "w",
         ) as fout:
             json.dump(locs_kmeans, fout)
 
         with open(
-            "enrichment_stuff/data/" + data_type + "/" + score_name + "_dist.json", "w"
+            "enrichment_stuff/data/AUCell/" + score_name + "/AUCell_dist.json", "w"
         ) as fout:
             json.dump(scores_dist, fout)
 
         with open(
-            "enrichment_stuff/data/" + data_type + "/" + score_name + "_gmm_thrs.json",
-            "w",
+            "enrichment_stuff/data/AUCell/" + score_name + "/AUCell_gmm_thrs.json", "w"
         ) as fout:
             json.dump(gmm_thrs, fout)
         with open(
-            "enrichment_stuff/data/"
-            + data_type
-            + "/"
-            + score_name
-            + "_kmeans_thrs.json",
+            "enrichment_stuff/data/AUCell/" + score_name + "/AUCell_kmeans_thrs.json",
             "w",
         ) as fout:
             json.dump(kmeans_thrs, fout)

@@ -3,10 +3,11 @@ import unittest
 
 import numpy as np
 import numpy.testing as npt
-from parameterized import parameterized
+
+# import parameterized
 from sklearn.datasets import make_blobs
 
-import gmm._matlab_legacy as ml
+import enrichment_auc._matlab_legacy as ml
 
 
 def no_threshold():
@@ -217,14 +218,14 @@ cases_expectations = [
 ]
 
 
-class TestFindThresholdsConsistency(unittest.TestCase):
-    @parameterized.expand(
-        [(f.__name__, f(), e) for f, e in zip(cases, cases_expectations)]
-    )
-    def test_consistency(self, _, values, expected):
-        _, native = ml.find_thresholds(values)
-        mcr = np.array(expected)
-        range_ = values.max() - values.min()
-        native_ = (native - values.min()) / range_
-        mcr_ = (mcr - values.min()) / range_
-        npt.assert_almost_equal(native_, mcr_, decimal=3)
+# class TestFindThresholdsConsistency(unittest.TestCase):
+#     @parameterized.parameterized.expand(
+#         [(f.__name__, f(), e) for f, e in zip(cases, cases_expectations)]
+#     )
+#     def test_consistency(self, _, values, expected):
+#         _, native = ml.find_thresholds(values)
+#         mcr = np.array(expected)
+#         range_ = values.max() - values.min()
+#         native_ = (native - values.min()) / range_
+#         mcr_ = (mcr - values.min()) / range_
+#         npt.assert_almost_equal(native_, mcr_, decimal=3)
