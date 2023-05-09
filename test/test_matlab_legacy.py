@@ -2,8 +2,8 @@ import os
 import unittest
 
 import numpy as np
-import numpy.testing as npt
 
+# import numpy.testing as npt
 # import parameterized
 from sklearn.datasets import make_blobs
 
