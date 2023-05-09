@@ -32,6 +32,6 @@ jobs:
       run: |
         poetry config virtualenvs.create false
         poetry install --with dev
-        powrey build
+        poetry build
     - name: Running the tests with pytest
       run: poetry run pytest
