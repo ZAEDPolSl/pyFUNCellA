@@ -1,7 +1,7 @@
-FROM python:3.7-slim AS base
+FROM python:3.9-slim AS base
 ENV PYTHONUNBUFFERED TRUE
 RUN mkdir -p /root/.config/matplotlib &&\
-  echo "backend : Agg" > /root/.config/matplotlib/matplotlibrc
+    echo "backend : Agg" > /root/.config/matplotlib/matplotlibrc
 WORKDIR /app
 RUN apt-get update &&\
     apt-get install -y libgomp1 &&\
@@ -11,19 +11,24 @@ RUN apt-get update &&\
 FROM base as builder
 SHELL ["/bin/bash", "-c"]
 RUN mkdir -p /install/lib/python3.7/site-packages
-ENV PYTHONPATH .:/install/lib/python3.7/site-packages
+ENV PYTHONPATH .:/install/lib/python3.9/site-packages
 RUN apt-get update &&\
-    apt-get install -y gcc curl &&\
+    apt-get install -y \
+    libgomp1 \
+    gcc \
+    curl \
+    git \
+    ssh &&\
     rm -rf /var/lib/apt/lists/*
 ENV POETRY_HOME="/opt/poetry"
-RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+RUN curl -sSL https://install.python-poetry.org | python -
 ENV PATH="${POETRY_HOME}/bin:${PATH}"
 
 
 FROM builder AS deps_builder
 COPY . /app
 RUN poetry config virtualenvs.create false &&\
-    poetry install &&\
+    poetry install  --with dev &&\
     poetry build
 
 

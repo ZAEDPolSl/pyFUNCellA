@@ -1,12 +1,12 @@
-FROM enrichment-auc:dev
+FROM enrichment_auc:dev
 
 EXPOSE 8888
 
 RUN apt-get update \
     && apt-get install -y \
-        gcc \
-        git \
-        ssh \
+    gcc \
+    git \
+    ssh \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install \
