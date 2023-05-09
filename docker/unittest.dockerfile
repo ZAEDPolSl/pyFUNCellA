@@ -4,15 +4,6 @@ RUN mkdir -p /root/.config/matplotlib &&\
     echo "backend : Agg" > /root/.config/matplotlib/matplotlibrc
 WORKDIR /app
 RUN apt-get update &&\
-    apt-get install -y libgomp1 &&\
-    rm -rf /var/lib/apt/lists/*
-
-
-FROM base as builder
-SHELL ["/bin/bash", "-c"]
-RUN mkdir -p /install/lib/python3.7/site-packages
-ENV PYTHONPATH .:/install/lib/python3.9/site-packages
-RUN apt-get update &&\
     apt-get install -y \
     libgomp1 \
     gcc \
@@ -24,29 +15,12 @@ ENV POETRY_HOME="/opt/poetry"
 RUN curl -sSL https://install.python-poetry.org | python -
 ENV PATH="${POETRY_HOME}/bin:${PATH}"
 
-
-FROM builder AS deps_builder
-COPY . /app
+COPY pyproject.toml poetry.lock /app
+COPY setup.py build.py README.md /app
+COPY gamred_native /app/gamred_native
+COPY enrichment_auc /app/enrichment_auc
 RUN poetry config virtualenvs.create false &&\
-    poetry install  --with dev &&\
+    poetry install --with dev &&\
     poetry build
-
-
-FROM builder AS deps_install
-COPY --from=deps_builder /app/dist /app/dist
-COPY requirements-dev.txt requirements-dev.txt
-RUN pip install -r requirements-dev.txt \
-    --prefix=/install \
-    --no-cache-dir \
-    --no-warn-script-location &&\
-    pip install /app/dist/enrichment-auc*.whl \
-    --prefix=/install \
-    --no-cache-dir \
-    --no-warn-script-location
-
-
-FROM base
-ENV ENABLE_SLOW_TESTS True
-COPY --from=deps_install /install /usr/local
-COPY . /app
+COPY test /app/test
 RUN pytest
