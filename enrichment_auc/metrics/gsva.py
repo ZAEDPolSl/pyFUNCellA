@@ -25,7 +25,7 @@ def _calculate_gene_zscores(x, batch_size=30):
             y = y.reshape((part.shape[0], part.shape[1], part.shape[1]))
             y = -y + part[:, :, None]
             y = stats.norm.cdf(y)
-            results[idx: idx + part.shape[0], :] = np.mean(y, axis=-1)
+            results[idx : idx + part.shape[0], :] = np.mean(y, axis=-1)
             idx += part.shape[0]
     return results
 
