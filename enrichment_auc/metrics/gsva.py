@@ -32,10 +32,9 @@ def _calculate_gene_zscores(x, batch_size=30):
 
 def _calculate_gene_poissons(x):
     x = x.astype(float)
-    for i in range(x.shape[0]):
-        x[i, :] = stats.poisson.cdf(
-            x[i, :].reshape((x.shape[1], 1)), x[i, :] + 0.5
-        ).mean(axis=1)
+    added = x + 0.5
+    for i in tqdm(range(x.shape[0]), mininterval=30):
+        x[i, :] = stats.poisson.cdf(x[i, :, np.newaxis], added[i, :]).mean(axis=1)
     return x
 
 
