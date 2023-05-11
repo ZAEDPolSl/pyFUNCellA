@@ -15,7 +15,10 @@ ENV POETRY_HOME="/opt/poetry"
 RUN curl -sSL https://install.python-poetry.org | python -
 ENV PATH="${POETRY_HOME}/bin:${PATH}"
 
-COPY . /app
+COPY pyproject.toml poetry.lock /app/
+COPY setup.py build.py README.md /app/
+COPY gamred_native /app/gamred_native
+COPY enrichment_auc /app/enrichment_auc
 RUN poetry config virtualenvs.create false &&\
     poetry install --with dev &&\
     poetry build
