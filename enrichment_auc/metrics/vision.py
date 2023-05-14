@@ -7,7 +7,7 @@ from tqdm import tqdm
 def create_random_gs(data, n, rng):
     if np.any(data.std(axis=0) == 0):
         raise ValueError(
-            "Some of the analyzed samples has 0 variation - the method cannot be applied."
+            "Some of the analyzed samples have 0 variation - the method cannot be applied."
         )
     genes = rng.choice(range(data.shape[0]), n, replace=False)
     in_gs = data[genes, :]
@@ -32,6 +32,8 @@ def _vision(geneset, data, genes, seed=0):
         genes_in_ds
     )  # number of genes in pathway - for creating random pathway for comparison
     in_gs = data[genes_in_ds, :]
+    if in_gs.shape[0] == 0:
+        return np.zeros(in_gs.shape[1])
     gs_expression = np.mean(in_gs, axis=0)
     rng = np.random.default_rng(seed)
     random_gs_mean, random_gs_std = create_random_gs(data, n, rng)
@@ -40,7 +42,7 @@ def _vision(geneset, data, genes, seed=0):
 
 
 def VISION(genesets, data, genes, seed=0):
-    res = np.empty((len(genesets), data.shape[1]))
+    res = np.zeros((len(genesets), data.shape[1]))
     for i, (gs_name, geneset_genes) in tqdm(
         enumerate(genesets.items()), total=len(genesets)
     ):
