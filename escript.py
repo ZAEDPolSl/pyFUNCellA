@@ -21,11 +21,16 @@ def pipeline_for_dist(score, geneset_name, score_name, save_dir):
     thresholds_gmm = find_grouped_dist_thresholds(
         distributions, localizer_gmm, score, geneset_name
     )
+    thr_gmm = scores.max()
+    thr_kmeans = scores.max()
+    if thresholds_gmm.shape[0] != 0:
+        thr_gmm = thresholds_gmm[-1]
+
     plot_mixtures(
         geneset_name,
         distributions,
         score,
-        thresholds_gmm[-1],
+        thr_gmm,
         thresholds_gmm,
         score_name,
         save_dir=save_dir + "/top1",
@@ -34,11 +39,13 @@ def pipeline_for_dist(score, geneset_name, score_name, save_dir):
     thresholds_kmeans = find_grouped_dist_thresholds(
         distributions, localizer_kmeans, score, geneset_name
     )
+    if thresholds_kmeans.shape[0] != 0:
+        thr_kmeans = thresholds_kmeans[-1]
     plot_mixtures(
         geneset_name,
         distributions,
         score,
-        thresholds_kmeans[-1],
+        thr_kmeans,
         thresholds_kmeans,
         score_name,
         save_dir=save_dir + "/kmeans",
@@ -117,6 +124,7 @@ if __name__ == "__main__":
             locs_gmm.append(localizer_gmm)
             localizer_kmeans = localizer_kmeans.tolist()
             locs_kmeans.append(localizer_kmeans)
+            break
 
         scores_thr.to_csv(res_folder + data_type + "/" + score_name + "_gmm_thr.csv")
         scores_thr_kmeans.to_csv(
