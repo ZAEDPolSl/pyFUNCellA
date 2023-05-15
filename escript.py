@@ -124,7 +124,6 @@ if __name__ == "__main__":
             locs_gmm.append(localizer_gmm)
             localizer_kmeans = localizer_kmeans.tolist()
             locs_kmeans.append(localizer_kmeans)
-            break
 
         scores_thr.to_csv(res_folder + data_type + "/" + score_name + "_gmm_thr.csv")
         scores_thr_kmeans.to_csv(
