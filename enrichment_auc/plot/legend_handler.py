@@ -8,7 +8,7 @@ def move_legend(ax, new_loc=None, append_to_labels=None, **kws):
         labels = [
             labels[i] + ": " + str(append_to_labels[i]) for i in range(len(labels))
         ]
-    title = old_legend.get_title().get_text()
+    title = ""
     if new_loc is not None:
         ax.legend(handles, labels, loc=new_loc, title=title, **kws)
     else:

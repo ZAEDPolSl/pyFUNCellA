@@ -1,10 +1,12 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import scipy.stats as stats
 import seaborn as sns
 from sklearn.metrics import jaccard_score
 
-from .distributions import categorize_by_thresholds, find_distribution
+from enrichment_auc.distributions import categorize_by_thresholds
+
 from .legend_handler import move_legend
 
 
@@ -45,8 +47,10 @@ def compare_mixture_cat(
     ax1.set_xlabel(name1)
     ax1.set_ylabel("Frequency")
     # add binary rugplot
+    df = pd.DataFrame([score1, binary_labels]).T
+    df.columns = ["score", "labels"]
     _ = sns.rugplot(
-        score1, height=-0.02, clip_on=False, hue=binary_labels, palette=comp_colors
+        df, x="score", height=-0.02, clip_on=False, hue="labels", palette=comp_colors
     )
     # show density plot and histogram
     _ = sns.histplot(score1, color="#B0B0B0", alpha=0.25, kde=False, stat="density")
@@ -63,7 +67,9 @@ def compare_mixture_cat(
     # add the rest of thresholds - rugplot
     if thrs1.shape[0] > 1:
         labels = categorize_by_thresholds(score1, thrs1)
-        _ = sns.rugplot(score1, clip_on=False, hue=labels, legend=False)
+        df = pd.DataFrame([score1, labels]).T
+        df.columns = ["score", "labels"]
+        _ = sns.rugplot(df, x="score", clip_on=False, hue="labels", legend=False)
     ax1.set_ylim(bottom=0)
 
     # SCORE 2 visualization
@@ -78,8 +84,16 @@ def compare_mixture_cat(
         score2, color="#B0B0B0", alpha=0.25, ax=ax2, kde=False, stat="density"
     )
     _ = sns.kdeplot(score2, linewidth=2, color=comp_colors_density, ax=ax2)
+    df = pd.DataFrame([score2, score_2]).T
+    df.columns = ["score", "labels"]
     _ = sns.rugplot(
-        score2, height=-0.02, clip_on=False, hue=score_2, palette=comp_colors, ax=ax2
+        df,
+        x="score",
+        height=-0.02,
+        clip_on=False,
+        hue="labels",
+        palette=comp_colors,
+        ax=ax2,
     )
 
     # Finishing touches
@@ -114,13 +128,15 @@ def plot_mixtures(
     ns_count = len(binary_labels) - sum(binary_labels)
     s_count = sum(binary_labels)
     binary_labels = [label_meaning[label] for label in binary_labels.tolist()]
+    df = pd.DataFrame([score, binary_labels]).T
+    df.columns = ["score", "labels"]
     # label plot
     plt.ylabel("Frequency")
     plt.xlabel(name)
     plt.title(geneset_name, fontsize=18)
     # add binary rugplot
     _ = sns.rugplot(
-        score, height=-0.02, clip_on=False, hue=binary_labels, palette=comp_colors
+        df, x="score", height=-0.02, clip_on=False, hue="labels", palette=comp_colors
     )
     # show density plot and histogram
     _ = sns.histplot(score, color="#B0B0B0", alpha=0.25, kde=False, stat="density")
@@ -136,7 +152,9 @@ def plot_mixtures(
     # add the rest of thresholds - rugplot
     if thrs.shape[0] > 1:
         labels = categorize_by_thresholds(score, thrs)
-        _ = sns.rugplot(score, clip_on=False, hue=labels, legend=False)
+        df = pd.DataFrame([score, labels]).T
+        df.columns = ["score", "labels"]
+        _ = sns.rugplot(df, x="score", clip_on=False, hue="labels", legend=False)
     # finishing touches
     ax.set_ylim(bottom=0)
     f.set_facecolor("w")
@@ -145,59 +163,3 @@ def plot_mixtures(
     plt.savefig(save_dir + "/dens_" + geneset_name + "_" + name + ".png")
     if file_only:
         plt.close()
-
-
-def pipeline_for_dist(gs_name, score1, score2, thr2, name1, name2, save_dir):
-    # get mixtures and thresholds
-    distributions, thresholds = find_distribution(score1)
-    # get single thresholds
-    thr1_1 = thresholds[-1]
-    thr1_2 = thresholds[-1]
-    if thr2 is not None:
-        compare_mixture_cat(
-            gs_name,
-            distributions,
-            score1,
-            thr1_1,
-            thresholds,
-            name1,
-            score2,
-            thr2,
-            name2,
-            save_dir=save_dir + "top1",
-            file_only=True,
-        )
-        compare_mixture_cat(
-            gs_name,
-            distributions,
-            score1,
-            thr1_2,
-            thresholds,
-            name1,
-            score2,
-            thr2,
-            name2,
-            save_dir=save_dir + "clustered",
-            file_only=True,
-        )
-    else:
-        plot_mixtures(
-            gs_name,
-            distributions,
-            score1,
-            thr1_1,
-            thresholds,
-            name1,
-            save_dir=save_dir + "top1",
-            file_only=True,
-        )
-        plot_mixtures(
-            gs_name,
-            distributions,
-            score1,
-            thr1_2,
-            thresholds,
-            name1,
-            save_dir=save_dir + "clustered",
-            file_only=True,
-        )

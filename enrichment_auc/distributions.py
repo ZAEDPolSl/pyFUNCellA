@@ -134,7 +134,7 @@ def _group_by_kmeans(distributions):
     localizer = np.zeros(mu.size)
     best_centers = np.zeros((1, features.shape[1]))
     for k in range(2, mu.size - 1):
-        km = KMeans(k)
+        km = KMeans(k, n_init="auto")
         labels = km.fit_predict(features)
         sil = silhouette_score(features, labels)
         if sil > best_sil:
