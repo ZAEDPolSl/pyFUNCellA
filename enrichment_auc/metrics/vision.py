@@ -26,13 +26,14 @@ def create_random_gs(data, n, rng):
     return rand_gs_mean, rand_gs_std
 
 
-def _vision(geneset, data, genes, seed=0):
+def _vision(geneset, data, genes, seed=0, gs_name=""):
     genes_in_ds = [gene in geneset for gene in genes]
     n = len(
         genes_in_ds
     )  # number of genes in pathway - for creating random pathway for comparison
     in_gs = data[genes_in_ds, :]
     if in_gs.shape[0] == 0:
+        print("Incorrect geneset format:", gs_name)
         return np.zeros(in_gs.shape[1])
     gs_expression = np.mean(in_gs, axis=0)
     rng = np.random.default_rng(seed)
@@ -46,5 +47,5 @@ def VISION(genesets, data, genes, seed=0):
     for i, (gs_name, geneset_genes) in tqdm(
         enumerate(genesets.items()), total=len(genesets)
     ):
-        res[i] = _vision(geneset_genes, data, genes, seed=seed)
+        res[i] = _vision(geneset_genes, data, genes, seed, gs_name)
     return res
