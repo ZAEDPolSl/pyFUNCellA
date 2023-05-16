@@ -7,7 +7,7 @@ from sklearn.metrics import silhouette_score
 from enrichment_auc._matlab_legacy import find_gaussian_mixtures
 
 
-def find_distribution(scores, gs_name=None):
+def find_distribution(scores, gs_name=""):
     if np.var(scores) == 0:
         print("All scores were of the same value in {}.".format(gs_name))
         return {
@@ -166,6 +166,18 @@ def group_distributions(distributions, method="gmm"):
     return np.zeros(distributions["mu"].size)
 
 
+def _remove_redundant_thresholds(thresholds, scores):
+    if thresholds.shape[0] == 0:
+        return thresholds
+    if len(np.where(scores > thresholds[-1])[0]) <= 1:
+        thresholds = thresholds[:-1]
+        if thresholds.shape[0] == 0:
+            return thresholds
+    if len(np.where(scores <= thresholds[0])[0]) <= 1:
+        thresholds = thresholds[1:]
+    return thresholds
+
+
 def find_grouped_dist_thresholds(distributions, localizer, scores, gs_name):
     # if there is only one distribution/all are grouped together
     if localizer.size <= 1 or np.unique(localizer).size == 1:
@@ -184,14 +196,7 @@ def find_grouped_dist_thresholds(distributions, localizer, scores, gs_name):
     thresholds = find_dist_crossings(
         distributions, localizer, unique_loc, pdfs, x_temp, gs_name
     )
-    if thresholds.shape[0] == 0:
-        return thresholds
-    if len(np.where(scores > thresholds[-1])[0]) <= 1:
-        thresholds = thresholds[:-1]
-        if thresholds.shape[0] == 0:
-            return thresholds
-    if len(np.where(scores <= thresholds[0])[0]) <= 1:
-        thresholds = thresholds[1:]
+    thresholds = _remove_redundant_thresholds(thresholds, scores)
     return thresholds
 
 
