@@ -179,6 +179,8 @@ def find_grouped_dist_thresholds(distributions, localizer, scores, gs_name):
         return thresholds
     if len(np.where(scores > thresholds[-1])[0]) <= 1:
         thresholds = thresholds[:-1]
+        if thresholds.shape[0] == 0:
+            return thresholds
     if len(np.where(scores <= thresholds[0])[0]) <= 1:
         thresholds = thresholds[1:]
     return thresholds
