@@ -16,41 +16,45 @@ from enrichment_auc.plot.plot_distributed_data import plot_mixtures
 def pipeline_for_dist(score, geneset_name, score_name, save_dir):
     # get mixtures and thresholds
     distributions = find_distribution(score, geneset_name)
+
     localizer_gmm = group_distributions(distributions, method="gmm")
     localizer_kmeans = group_distributions(distributions, method="kmeans")
+
     thresholds_gmm = find_grouped_dist_thresholds(
         distributions, localizer_gmm, score, geneset_name
     )
-    thr_gmm = scores.max()
-    thr_kmeans = scores.max()
-    if thresholds_gmm.shape[0] != 0:
-        thr_gmm = thresholds_gmm[-1]
 
-    plot_mixtures(
-        geneset_name,
-        distributions,
-        score,
-        thr_gmm,
-        thresholds_gmm,
-        score_name,
-        save_dir=save_dir + "/top1",
-        file_only=True,
-    )
     thresholds_kmeans = find_grouped_dist_thresholds(
         distributions, localizer_kmeans, score, geneset_name
     )
-    if thresholds_kmeans.shape[0] != 0:
-        thr_kmeans = thresholds_kmeans[-1]
-    plot_mixtures(
-        geneset_name,
-        distributions,
-        score,
-        thr_kmeans,
-        thresholds_kmeans,
-        score_name,
-        save_dir=save_dir + "/kmeans",
-        file_only=True,
-    )
+
+    if np.var(score) != 0:
+        thr_gmm = score.max()
+        thr_kmeans = score.max()
+        if thresholds_gmm.shape[0] != 0:
+            thr_gmm = thresholds_gmm[-1]
+        if thresholds_kmeans.shape[0] != 0:
+            thr_kmeans = thresholds_kmeans[-1]
+        plot_mixtures(
+            geneset_name,
+            distributions,
+            score,
+            thr_gmm,
+            thresholds_gmm,
+            score_name,
+            save_dir=save_dir + "/top1",
+            file_only=True,
+        )
+        plot_mixtures(
+            geneset_name,
+            distributions,
+            score,
+            thr_kmeans,
+            thresholds_kmeans,
+            score_name,
+            save_dir=save_dir + "/kmeans",
+            file_only=True,
+        )
     return (
         thresholds_gmm,
         thresholds_kmeans,

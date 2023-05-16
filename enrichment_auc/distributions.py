@@ -8,6 +8,15 @@ from enrichment_auc._matlab_legacy import find_gaussian_mixtures
 
 
 def find_distribution(scores, gs_name=None):
+    if np.var(scores) == 0:
+        print("All scores were of the same value in {}.".format(gs_name))
+        return {
+            "weights": np.array([]),
+            "mu": np.array([]),
+            "sigma": np.array([]),
+            "TIC": np.nan,
+            "l_lik": np.nan,
+        }
     # find proper Gaussian Mixture model approximating the scores' distribution
     counts = np.ones(scores.shape)
     if stats.shapiro(scores).pvalue > 0.05:  # check if distribution is normal
