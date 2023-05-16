@@ -14,6 +14,7 @@ from enrichment_auc.plot.plot_distributed_data import plot_mixtures
 
 
 def pipeline_for_dist(score, geneset_name, score_name, save_dir):
+    score = np.nan_to_num(score)
     # get mixtures and thresholds
     distributions = find_distribution(score, geneset_name)
 
@@ -71,8 +72,8 @@ score_names = [
     "cerno",
     "ratios",
     "vision",
-    "svd",
-    "sparse_pca",
+    # "svd",
+    # "sparse_pca",
 ]  # all scores to run for each data type
 
 if __name__ == "__main__":
