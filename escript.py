@@ -79,7 +79,7 @@ if __name__ == "__main__":
     data_type = sys.argv[1]
     res_folder = sys.argv[2]
     save_dir = sys.argv[3]
-    save_dir = save_dir + data_type + "/"
+    save_dir = save_dir + "/" + data_type
     print(data_type)
     for score_name in tqdm(score_names):
         print(score_name)
