@@ -3,7 +3,7 @@ import sys
 
 import pandas as pd
 
-from enrichment_auc.metrics import cerno, gsva, rank, ratio, svd, vision, z
+from enrichment_auc.metrics import aucell, cerno, gsva, rank, ratio, svd, vision, z
 
 if __name__ == "__main__":
     inpath = sys.argv[1]
@@ -28,6 +28,12 @@ if __name__ == "__main__":
     df_ratio.to_csv(outpath + "/ratios.csv")
     # ranks
     ranks = rank.rank_genes(gene_expr)
+    # aucell
+    aucell_ = aucell.AUCELL(genesets, ranks, genes)
+    df_aucell = pd.DataFrame(
+        data=aucell_, index=list(genesets.keys()), columns=patients_names
+    )
+    df_aucell.to_csv(outpath + "/aucell.csv")
     # cerno
     cerno_, auc, pvals_005, qvals_005 = cerno.CERNO(genesets, ranks, genes, alpha=0.05)
     df_cerno = pd.DataFrame(
