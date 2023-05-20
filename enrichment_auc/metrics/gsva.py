@@ -1,4 +1,5 @@
 import math
+import multiprocessing as mp
 
 import numpy as np
 from scipy import stats
@@ -38,6 +39,31 @@ def _calculate_gene_poissons(x):
     return x
 
 
+def _single_poisson(patient):
+    return stats.poisson.cdf(
+        patient.reshape((patient.shape[1], 1)), patient + 0.5
+    ).mean(axis=1)
+
+
+def _multi_poisson(arr):
+    num_processes = mp.cpu_count()
+    with mp.Pool(num_processes) as p:
+        chunks = [arr[i : i + 1, :] for i in range(0, arr.shape[0], 1)]
+        r = np.array(
+            list(
+                tqdm(
+                    p.imap(
+                        _single_poisson,
+                        chunks,
+                    ),
+                    total=arr.shape[0],
+                    mininterval=60,
+                )
+            )
+        )
+    return r
+
+
 def _rank_expressions(phenotype_expressions):
     ranks = (-phenotype_expressions).argsort(axis=0).argsort(axis=0) + 1
     ranks = ranks - ranks.shape[0] / 2
@@ -51,10 +77,13 @@ def _get_miss_increment(genes_in_ds, genes):
     return increment
 
 
-def get_ranks(data, genes, datatype="single_cell"):
+def get_ranks(data, genes, datatype="single_cell", multiprocess=True):
     print("Transforming the geneset...\n")
     if datatype == "single_cell":
-        transformed = _calculate_gene_poissons(data)
+        if multiprocess:
+            transformed = _multi_poisson(data)
+        else:
+            transformed = _calculate_gene_poissons(data)
     else:
         bandwidths = (np.std(data, axis=1) / 4)[:, None]
         if np.where(bandwidths == 0)[0].shape[0] != 0:
