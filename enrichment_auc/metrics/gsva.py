@@ -57,7 +57,6 @@ def _multi_poisson(arr):
                         chunks,
                     ),
                     total=arr.shape[0],
-                    mininterval=60,
                 )
             )
         )

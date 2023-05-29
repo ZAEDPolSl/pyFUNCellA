@@ -139,7 +139,18 @@ def plot_mixtures(
         df, x="score", height=-0.02, clip_on=False, hue="labels", palette=comp_colors
     )
     # show density plot and histogram
-    _ = sns.histplot(score, color="#B0B0B0", alpha=0.25, kde=False, stat="density")
+    try:
+        _ = sns.histplot(score, color="#B0B0B0", alpha=0.25, kde=False, stat="density")
+    except np.core._exceptions._ArrayMemoryError:
+        sns.histplot(
+            x=score,
+            element="step",
+            bins="sturges",
+            color="#B0B0B0",
+            alpha=0.25,
+            kde=False,
+            stat="density",
+        )
     # _ = sns.kdeplot(score, linewidth=2, color='k')
     move_legend(ax, "upper right", [ns_count, s_count])
     # add the distributions
