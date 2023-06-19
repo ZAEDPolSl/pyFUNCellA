@@ -67,21 +67,24 @@ def pipeline_for_dist(score, geneset_name, score_name, save_dir):
 
 score_names = [
     "z",
-    # "gsva",
+    "gsva",
     "auc",
     "cerno",
     "ratios",
     "vision",
-    # "svd",
-    # "sparse_pca",
+    "aucell",
+    "svd",
+    "sparse_pca",
 ]  # all scores to run for each data type
 
 if __name__ == "__main__":
     data_type = sys.argv[1]
     res_folder = sys.argv[2]
     save_dir = sys.argv[3]
+    data_folder = sys.argv[4]
     save_dir = save_dir + "/" + data_type
     print(data_type)
+    geneset_info = pd.read_csv(data_folder + "genesets_modules.csv", index_col=0)
     for score_name in tqdm(score_names):
         print(score_name)
         # get scores
@@ -99,6 +102,9 @@ if __name__ == "__main__":
         locs_gmm = []
         locs_kmeans = []
         for i, gs_name in tqdm(enumerate(gs_names), total=len(gs_names)):
+            gs_title = geneset_info.Title.where(
+                geneset_info.ID == gs_name, gs_name
+            ).max()
             score = scores[i, :]
             (
                 thresholds_gmm,
@@ -106,7 +112,7 @@ if __name__ == "__main__":
                 distributions,
                 localizer_gmm,
                 localizer_kmeans,
-            ) = pipeline_for_dist(score, gs_name, score_name, save_dir)
+            ) = pipeline_for_dist(score, gs_title, score_name, save_dir)
             del distributions["TIC"], distributions["l_lik"]
             distributions["weights"] = (distributions["weights"]).tolist()
             distributions["mu"] = (distributions["mu"]).tolist()
