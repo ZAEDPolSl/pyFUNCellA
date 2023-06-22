@@ -3,7 +3,17 @@ import sys
 
 import pandas as pd
 
-from enrichment_auc.metrics import aucell, cerno, gsva, rank, ratio, svd, vision, z
+from enrichment_auc.metrics import (
+    aucell,
+    cerno,
+    gsva,
+    rank,
+    ratio,
+    svd,
+    vision,
+    z,
+    mean,
+)
 
 if __name__ == "__main__":
     inpath = sys.argv[1]
@@ -68,6 +78,12 @@ if __name__ == "__main__":
         data=vision_, index=list(genesets.keys()), columns=patients_names
     )
     df_vision.to_csv(outpath + "/vision.csv")
+    # mean
+    mean_ = mean.MEAN(genesets, gene_expr, genes)
+    df_mean = pd.DataFrame(
+        data=mean_, index=list(genesets.keys()), columns=patients_names
+    )
+    df_mean.to_csv(outpath + "/mean.csv")
     # z
     pvals_005, qvals_005, z_ = z.Z(genesets, ranks, genes, alpha=0.05)
     df_z = pd.DataFrame(data=z_, index=list(genesets.keys()), columns=patients_names)
