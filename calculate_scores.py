@@ -6,10 +6,13 @@ import pandas as pd
 from enrichment_auc.metrics import (
     aucell,
     cerno,
+    gsea,
     gsva,
+    ssgsea,
     rank,
     ratio,
     svd,
+    jasmine,
     vision,
     z,
     mean,
@@ -96,14 +99,29 @@ if __name__ == "__main__":
         data=qvals_005, index=list(genesets.keys()), columns=patients_names
     )
     df_qvals_005.to_csv(outpath + "/qvals_z005.csv")
+    # jasmine
+    jasmine_ = jasmine.JASMINE(genesets, gene_expr, genes)
+    df_jasmine = pd.DataFrame(
+        data=jasmine_, index=list(genesets.keys()), columns=patients_names
+    )
+    df_jasmine.to_csv(outpath + "/jasmine.csv")
     # gsva
     del ratio_, cerno_, auc, pvals_005, qvals_005, svd_, vision_, z_
     del df_ratio, df_auc, df_qvals_005, df_cerno, df_vision, df_z
     ranks, _ = gsva.get_ranks(gene_expr, genes)
     df_gsva = pd.DataFrame(data=ranks, index=genes, columns=patients_names)
     df_gsva.to_csv(outpath + "/ranks_gsva.csv")
-    gsva_ = gsva.GSVA(genesets, ranks, genes)
+    gsva_ = gsea.GSEA(genesets, ranks, genes)
     df_gsva = pd.DataFrame(
         data=gsva_, index=list(genesets.keys()), columns=patients_names
     )
     df_gsva.to_csv(outpath + "/gsva.csv")
+    # ssgsea
+    ranks, _ = ssgsea.get_ranks(gene_expr)
+    df_ssgsea = pd.DataFrame(data=ranks, index=genes, columns=patients_names)
+    df_ssgsea.to_csv(outpath + "/ranks_ssgsea.csv")
+    ssgsea_ = gsea.GSEA(genesets, ranks, genes)
+    df_ssgsea = pd.DataFrame(
+        data=ssgsea_, index=list(genesets.keys()), columns=patients_names
+    )
+    df_ssgsea.to_csv(outpath + "/ssgsea.csv")
