@@ -1,11 +1,10 @@
-import math
 import multiprocessing as mp
 
 import numpy as np
 from scipy import stats
 from tqdm import tqdm
 
-from gsea import calculate_gene_zscores, rank_expressions
+from enrichment_auc.metrics.gsea import calculate_gene_zscores, rank_expressions
 
 
 def _calculate_gene_poissons(x):

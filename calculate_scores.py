@@ -1,7 +1,9 @@
 import json
 import sys
 
+import numpy as np
 import pandas as pd
+from time import time
 
 from enrichment_auc.metrics import (
     aucell,
@@ -32,96 +34,102 @@ if __name__ == "__main__":
     patients_names = gene_expr.columns.to_list()
     genes = gene_expr.index.tolist()
     gene_expr = gene_expr.to_numpy().astype(float)
-    # get scores
-    # ratio
-    ratio_ = ratio.calculate_ratios(genesets, gene_expr, genes)
-    df_ratio = pd.DataFrame(
-        data=ratio_, index=list(genesets.keys()), columns=patients_names
-    )
-    df_ratio.to_csv(outpath + "/ratios.csv")
+
+    # get scores with no ranks and single output:
+    scores_functions = [
+        ratio.RATIO,
+        svd.SVD,
+        svd.sparse_PCA,
+        vision.VISION,
+        mean.MEAN,
+        jasmine.JASMINE,
+    ]
+    scores_names = [
+        "ratios",
+        "svd",
+        "sparse_pca",
+        "vision",
+        "mean",
+        "jasmine",
+        "gsva",
+        "ssgsea",
+        "cerno",
+        "aucell",
+        "auc",
+        "z",
+    ]
+    elapsed_times = np.zeros(len(scores_names))
+    for i in range(len(scores_functions)):
+        t = time()
+        score = scores_functions[i](genesets, gene_expr, genes)
+        elapsed = time() - t
+        elapsed_times[i] = elapsed
+        df_score = pd.DataFrame(
+            data=score, index=list(genesets.keys()), columns=patients_names
+        )
+        df_score.to_csv(outpath + "/" + scores_names[i] + ".csv")
+
+    # get GSEA based scores:
+    gsea_based_names = ["gsva", "ssgsea"]
+    gsea_based_functions = [gsva.get_ranks, ssgsea.get_ranks]
+    for i in range(len(gsea_based_names)):
+        del df_score, score
+        t = time()
+        ranks, _ = gsea_based_functions[i](gene_expr, genes)
+        score = gsea.GSEA(genesets, ranks, genes)
+        elapsed = time() - t
+        elapsed_times[scores_names.index(gsea_based_names[i])] = elapsed
+        df_ranks = pd.DataFrame(data=ranks, index=genes, columns=patients_names)
+        df_ranks.to_csv(outpath + "/ranks_" + gsea_based_names[i] + ".csv")
+        df_score = pd.DataFrame(
+            data=score, index=list(genesets.keys()), columns=patients_names
+        )
+        df_score.to_csv(outpath + "/" + gsea_based_names[i] + ".csv")
+        del ranks
+
+    # get scores based on simple ranks:
     # ranks
+    elements = [
+        scores_names.index("cerno"),
+        scores_names.index("auc"),
+        scores_names.index("aucell"),
+        scores_names.index("z"),
+    ]
+    t = time()
     ranks = rank.rank_genes(gene_expr)
+    elapsed = time() - t
+    elapsed_times[elements] = elapsed
     # aucell
+    t = time()
     aucell_ = aucell.AUCELL(genesets, ranks, genes)
+    elapsed = time() - t
+    elapsed_times[scores_names.index("aucell")] += elapsed
     df_aucell = pd.DataFrame(
         data=aucell_, index=list(genesets.keys()), columns=patients_names
     )
     df_aucell.to_csv(outpath + "/aucell.csv")
     # cerno
-    cerno_, auc, pvals_005, qvals_005 = cerno.CERNO(genesets, ranks, genes, alpha=0.05)
-    df_cerno = pd.DataFrame(
-        data=cerno_, index=list(genesets.keys()), columns=patients_names
-    )
-    df_cerno.to_csv(outpath + "/cerno.csv")
-    df_auc = pd.DataFrame(data=auc, index=list(genesets.keys()), columns=patients_names)
-    df_auc.to_csv(outpath + "/auc.csv")
-    df_pvals_005 = pd.DataFrame(
-        data=pvals_005, index=list(genesets.keys()), columns=patients_names
-    )
-    df_pvals_005.to_csv(outpath + "/pvals_cerno005.csv")
-    df_qvals_005 = pd.DataFrame(
-        data=qvals_005, index=list(genesets.keys()), columns=patients_names
-    )
-    df_qvals_005.to_csv(outpath + "/qvals_cerno005.csv")
-    # svd
-    svd_ = svd.SVD(genesets, gene_expr, genes)
-    df_svd = pd.DataFrame(
-        data=svd_, index=list(genesets.keys()), columns=patients_names
-    )
-    df_svd.to_csv(outpath + "/svd.csv")
-    # sparse pca
-    svd_ = svd.sparse_PCA(genesets, gene_expr, genes)
-    df_svd = pd.DataFrame(
-        data=svd_, index=list(genesets.keys()), columns=patients_names
-    )
-    df_svd.to_csv(outpath + "/sparse_pca.csv")
-    # vision
-    vision_ = vision.VISION(genesets, gene_expr, genes)
-    df_vision = pd.DataFrame(
-        data=vision_, index=list(genesets.keys()), columns=patients_names
-    )
-    df_vision.to_csv(outpath + "/vision.csv")
-    # mean
-    mean_ = mean.MEAN(genesets, gene_expr, genes)
-    df_mean = pd.DataFrame(
-        data=mean_, index=list(genesets.keys()), columns=patients_names
-    )
-    df_mean.to_csv(outpath + "/mean.csv")
+    cerno_names = ["cerno", "auc", "pvals_cerno005", "qvals_cerno005"]
+    t = time()
+    output = cerno.CERNO(genesets, ranks, genes, alpha=0.05)
+    elapsed = time() - t
+    elapsed_times[scores_names.index("cerno")] += elapsed
+    elapsed_times[scores_names.index("auc")] += elapsed
+    for i in range(len(cerno_names)):
+        df = pd.DataFrame(
+            data=output[i], index=list(genesets.keys()), columns=patients_names
+        )
+        df.to_csv(outpath + "/" + cerno_names[i] + ".csv")
     # z
-    pvals_005, qvals_005, z_ = z.Z(genesets, ranks, genes, alpha=0.05)
-    df_z = pd.DataFrame(data=z_, index=list(genesets.keys()), columns=patients_names)
-    df_z.to_csv(outpath + "/z.csv")
-    df_pvals_005 = pd.DataFrame(
-        data=pvals_005, index=list(genesets.keys()), columns=patients_names
-    )
-    df_pvals_005.to_csv(outpath + "/pvals_z005.csv")
-    df_qvals_005 = pd.DataFrame(
-        data=qvals_005, index=list(genesets.keys()), columns=patients_names
-    )
-    df_qvals_005.to_csv(outpath + "/qvals_z005.csv")
-    # jasmine
-    jasmine_ = jasmine.JASMINE(genesets, gene_expr, genes)
-    df_jasmine = pd.DataFrame(
-        data=jasmine_, index=list(genesets.keys()), columns=patients_names
-    )
-    df_jasmine.to_csv(outpath + "/jasmine.csv")
-    # gsva
-    del ratio_, cerno_, auc, pvals_005, qvals_005, svd_, vision_, z_
-    del df_ratio, df_auc, df_qvals_005, df_cerno, df_vision, df_z
-    ranks, _ = gsva.get_ranks(gene_expr, genes)
-    df_gsva = pd.DataFrame(data=ranks, index=genes, columns=patients_names)
-    df_gsva.to_csv(outpath + "/ranks_gsva.csv")
-    gsva_ = gsea.GSEA(genesets, ranks, genes)
-    df_gsva = pd.DataFrame(
-        data=gsva_, index=list(genesets.keys()), columns=patients_names
-    )
-    df_gsva.to_csv(outpath + "/gsva.csv")
-    # ssgsea
-    ranks, _ = ssgsea.get_ranks(gene_expr)
-    df_ssgsea = pd.DataFrame(data=ranks, index=genes, columns=patients_names)
-    df_ssgsea.to_csv(outpath + "/ranks_ssgsea.csv")
-    ssgsea_ = gsea.GSEA(genesets, ranks, genes)
-    df_ssgsea = pd.DataFrame(
-        data=ssgsea_, index=list(genesets.keys()), columns=patients_names
-    )
-    df_ssgsea.to_csv(outpath + "/ssgsea.csv")
+    z_names = ["pvals_005", "qvals_005", "z"]
+    t = time()
+    output = z.Z(genesets, ranks, genes, alpha=0.05)
+    elapsed = time() - t
+    elapsed_times[scores_names.index("z")] += elapsed
+    for i in range(len(z_names)):
+        df = pd.DataFrame(
+            data=output[i], index=list(genesets.keys()), columns=patients_names
+        )
+        df.to_csv(outpath + "/" + z_names[i] + ".csv")
+    times_df = pd.DataFrame(data=elapsed_times, index=scores_names, columns=["time"])
+    times_df.to_csv(outpath + "/times.csv")

@@ -12,7 +12,7 @@ def _ratio(geneset, data, genes, gs_name=""):
     return gs_expression
 
 
-def calculate_ratios(genesets, data, genes):
+def RATIO(genesets, data, genes):
     res = np.empty((len(genesets), data.shape[1]))
     for i, (gs_name, geneset_genes) in tqdm(
         enumerate(genesets.items()), total=len(genesets)

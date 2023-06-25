@@ -37,5 +37,5 @@ def test_calculate_ratio():
             [0, 5, 0, 5, 0],
         ]
     )
-    res = ratio.calculate_ratios(genesets, data, genes)
+    res = ratio.RATIO(genesets, data, genes)
     assert np.array_equal(expected, res)
