@@ -26,7 +26,7 @@ if __name__ == "__main__":
     datatype = sys.argv[3]
     outpath = outpath + "/" + datatype
     # load genesets
-    with open(inpath + "/genesets_genes.json") as file:
+    with open(inpath + "/filtered_genesets_genes.json") as file:
         genesets = json.load(file)
     gs_names = list(genesets.keys())
     # load gene expressions

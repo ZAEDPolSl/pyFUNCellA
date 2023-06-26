@@ -75,6 +75,9 @@ score_names = [
     "aucell",
     "svd",
     "sparse_pca",
+    "ssgsea",
+    "jasmine",
+    "mean",
 ]  # all scores to run for each data type
 
 if __name__ == "__main__":
@@ -84,7 +87,9 @@ if __name__ == "__main__":
     data_folder = sys.argv[4]
     save_dir = save_dir + "/" + data_type
     print(data_type)
-    geneset_info = pd.read_csv(data_folder + "genesets_modules.csv", index_col=0)
+    geneset_info = pd.read_csv(
+        data_folder + "filtered_genesets_modules.csv", index_col=0
+    )
     for score_name in tqdm(score_names):
         print(score_name)
         # get scores
