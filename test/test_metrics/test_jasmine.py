@@ -8,7 +8,18 @@ def test_ranks():
         [[0.1, 0.7, 0.9], [0.8, 0.6, 0.2], [0.0, 0.3, 0.5], [0.7, 0.0, 0.1]]
     )
     data = np.ma.masked_equal(data, 0)
-    ranks = np.array([[3, 1, 1], [1, 2, 3], [0, 3, 2], [2, 0, 4]])
+    ranks = np.array([[1, 3, 4], [3, 2, 2], [0, 1, 3], [2, 0, 1]])
+    ranks = np.ma.masked_equal(ranks, 0)
+    ranks_jasmine = jasmine.rank_genes(data)
+    assert np.ma.allequal(ranks_jasmine, ranks, fill_value=True)
+
+
+def test_ranks_ties():
+    data = np.array(
+        [[0.1, 0.7, 0.9], [0.8, 0.6, 0.2], [0.0, 0.3, 0.5], [0.1, 0.0, 0.1]]
+    )
+    data = np.ma.masked_equal(data, 0)
+    ranks = np.array([[1.5, 3, 4], [3, 2, 2], [0, 1, 3], [1.5, 0, 1]])
     ranks = np.ma.masked_equal(ranks, 0)
     ranks_jasmine = jasmine.rank_genes(data)
     assert np.ma.allequal(ranks_jasmine, ranks, fill_value=True)
@@ -39,9 +50,20 @@ def test_full_jasmine():
     data = np.array(
         [[0.1, 0.7, 0.9], [0.8, 0.6, 0.2], [0.0, 0.3, 0.5], [0.7, 0.0, 0.1]]
     )
-    res_expected = np.array([[1.0, 0, 1.0], [2 / 3, 0, 1.0]])
+    res_expected = np.array([[1.0 / 3, 1, 0.0], [1, 0, 3.0 / 8]])
     jasmine_ = jasmine.JASMINE(genesets, data, genes)
-    assert np.array_equal(res_expected, jasmine_)
+    assert np.isclose(res_expected, jasmine_, atol=10e-4).all()
+
+
+def test_full_jasmine_ties():
+    genes = ["a", "b", "c", "d"]
+    genesets = {"geneset": ["a", "b", "d"], "geneset1": ["d"]}
+    data = np.array(
+        [[0.1, 0.7, 0.9], [0.8, 0.6, 0.2], [0.0, 0.3, 0.5], [0.1, 0.0, 0.1]]
+    )
+    res_expected = np.array([[1.0 / 3, 1, 0.0], [1, 0, 1.0 / 2]])
+    jasmine_ = jasmine.JASMINE(genesets, data, genes)
+    assert np.isclose(res_expected, jasmine_, atol=10e-4).all()
 
 
 def test_jasmine_is_0_robust():
@@ -50,6 +72,6 @@ def test_jasmine_is_0_robust():
     data = np.array(
         [[0.1, 0.7, 0.0], [0.8, 0.6, 0.0], [0.0, 0.3, 0.0], [0.7, 0.0, 0.0]]
     )
-    res_expected = np.array([[1.0, 0.75, 0.0], [1.0, 0, 0.0]])
+    res_expected = np.array([[0.8, 1.0, 0.0], [1.0, 0, 0.0]])
     jasmine_ = jasmine.JASMINE(genesets, data, genes)
-    assert np.array_equal(res_expected, jasmine_)
+    assert np.isclose(res_expected, jasmine_, atol=10e-4).all()
