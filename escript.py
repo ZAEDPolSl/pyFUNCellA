@@ -99,6 +99,8 @@ if __name__ == "__main__":
         )
         gs_names = scores.index.values.tolist()
         scores = scores.to_numpy()
+        if score_name in ["svd", "sparse_pca"]:
+            scores = np.abs(scores)
         scores_thr = pd.DataFrame(0, index=gs_names, columns=np.arange(1))
         scores_thr_kmeans = pd.DataFrame(0, index=gs_names, columns=np.arange(1))
         scores_dist = []
