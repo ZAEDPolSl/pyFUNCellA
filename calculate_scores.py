@@ -8,10 +8,9 @@ from time import time
 from enrichment_auc.metrics import (
     aucell,
     cerno,
-    gsea,
-    gsva,
-    ssgsea,
-    rank,
+    # gsea,
+    # gsva,
+    # ssgsea,
     ratio,
     svd,
     jasmine,
@@ -35,39 +34,42 @@ if __name__ == "__main__":
     genes = gene_expr.index.tolist()
     gene_expr = gene_expr.to_numpy().astype(float)
 
-    # get scores with no ranks and single output:
-    # scores_functions = [
-    #     ratio.RATIO,
-    #     svd.SVD,
-    #     svd.sparse_PCA,
-    #     vision.VISION,
-    #     mean.MEAN,
-    #     jasmine.JASMINE,
-    # ]
+    # get scores with single output:
+    scores_functions = [
+        ratio.RATIO,
+        svd.SVD,
+        svd.sparse_PCA,
+        vision.VISION,
+        mean.MEAN,
+        jasmine.JASMINE,
+        cerno.AUC,
+        aucell.AUCELL,
+    ]
     scores_names = [
-        # "ratios",
-        # "svd",
-        # "sparse_pca",
-        # "vision",
-        # "mean",
-        # "jasmine",
-        # "gsva",
-        # "ssgsea",
-        # "cerno",
-        # "aucell",
-        # "auc",
+        "ratios",
+        "svd",
+        "sparse_pca",
+        "vision",
+        "mean",
+        "jasmine",
+        "auc",
+        "aucell",
+        "gsva",
+        "ssgsea",
+        "cerno",
         "z",
     ]
+
     elapsed_times = np.zeros(len(scores_names))
-    # for i in range(len(scores_functions)):
-    #     t = time()
-    #     score = scores_functions[i](genesets, gene_expr, genes)
-    #     elapsed = time() - t
-    #     elapsed_times[i] = elapsed
-    #     df_score = pd.DataFrame(
-    #         data=score, index=list(genesets.keys()), columns=patients_names
-    #     )
-    #     df_score.to_csv(outpath + "/" + scores_names[i] + ".csv")
+    for i in range(len(scores_functions)):
+        t = time()
+        score = scores_functions[i](genesets, gene_expr, genes)
+        elapsed = time() - t
+        elapsed_times[i] = elapsed
+        df_score = pd.DataFrame(
+            data=score, index=list(genesets.keys()), columns=patients_names
+        )
+        df_score.to_csv(outpath + "/" + scores_names[i] + ".csv")
 
     # z
     z_names = ["pvals_005", "qvals_005", "z"]
@@ -80,6 +82,18 @@ if __name__ == "__main__":
             data=output[i], index=list(genesets.keys()), columns=patients_names
         )
         df.to_csv(outpath + "/" + z_names[i] + ".csv")
+
+    # cerno
+    cerno_names = ["cerno", "pvals_cerno005", "qvals_cerno005"]
+    t = time()
+    output = cerno.FISHER(genesets, gene_expr, genes, alpha=0.05)
+    elapsed = time() - t
+    elapsed_times[scores_names.index("cerno")] += elapsed
+    for i in range(len(cerno_names)):
+        df = pd.DataFrame(
+            data=output[i], index=list(genesets.keys()), columns=patients_names
+        )
+        df.to_csv(outpath + "/" + cerno_names[i] + ".csv")
 
     # get GSEA based scores:
     # gsea_based_names = ["gsva", "ssgsea"]
@@ -98,39 +112,3 @@ if __name__ == "__main__":
     #     )
     #     df_score.to_csv(outpath + "/" + gsea_based_names[i] + ".csv")
     #     del ranks
-
-    # get scores based on simple ranks:
-    # ranks
-    # elements = [
-    #     scores_names.index("cerno"),
-    #     scores_names.index("auc"),
-    #     scores_names.index("aucell"),
-    # ]
-    # t = time()
-    # ranks = rank.rank_genes(gene_expr)
-    # elapsed = time() - t
-    # elapsed_times[elements] = elapsed
-    # # aucell
-    # t = time()
-    # aucell_ = aucell.AUCELL(genesets, ranks, genes)
-    # elapsed = time() - t
-    # elapsed_times[scores_names.index("aucell")] += elapsed
-    # df_aucell = pd.DataFrame(
-    #     data=aucell_, index=list(genesets.keys()), columns=patients_names
-    # )
-    # df_aucell.to_csv(outpath + "/aucell.csv")
-    # # cerno
-    # cerno_names = ["cerno", "auc", "pvals_cerno005", "qvals_cerno005"]
-    # t = time()
-    # output = cerno.CERNO(genesets, ranks, genes, alpha=0.05)
-    # elapsed = time() - t
-    # elapsed_times[scores_names.index("cerno")] += elapsed
-    # elapsed_times[scores_names.index("auc")] += elapsed
-    # for i in range(len(cerno_names)):
-    #     df = pd.DataFrame(
-    #         data=output[i], index=list(genesets.keys()), columns=patients_names
-    #     )
-    #     df.to_csv(outpath + "/" + cerno_names[i] + ".csv")
-
-    # times_df = pd.DataFrame(data=elapsed_times, index=scores_names, columns=["time"])
-    # times_df.to_csv(outpath + "/times.csv")
