@@ -112,3 +112,5 @@ if __name__ == "__main__":
     #     )
     #     df_score.to_csv(outpath + "/" + gsea_based_names[i] + ".csv")
     #     del ranks
+
+    elapsed_times.to_csv(outpath + "/times.csv")
