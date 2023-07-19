@@ -20,12 +20,11 @@ def _z(geneset, data, genes, alpha=0.05, gs_name=""):
     return pvals, qvals, z
 
 
-def Z(
-    genesets, data, genes, alpha=0.05
-):  # ordered gene names for each patient, genesets
-    data = stats.norm.cdf(
-        data.transpose(), loc=np.mean(data, axis=1), scale=np.std(data, axis=1, ddof=1)
-    ).transpose()
+def Z(genesets, data, genes, alpha=0.05):
+    # gene expression for each patient, genesets
+    m = data.mean(axis=1, keepdims=True)
+    sd = data.std(axis=1, keepdims=True, ddof=1)
+    data = (data - m) / sd
     pval = np.empty((len(genesets), data.shape[1]))
     qval = np.empty((len(genesets), data.shape[1]))
     z = np.empty((len(genesets), data.shape[1]))

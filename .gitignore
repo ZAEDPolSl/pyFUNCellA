@@ -130,3 +130,8 @@ dmypy.json
 
 # polyaxon 
 .polyaxon
+
+/data
+/plots
+/results
+*.json

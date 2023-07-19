@@ -1,5 +1,6 @@
 import numpy as np
 from sklearn.decomposition import PCA, SparsePCA
+from sklearn.preprocessing import scale
 from tqdm import tqdm
 
 
@@ -9,7 +10,11 @@ def _sparse_pca(geneset, data, genes, gs_name=""):
     if (in_gs.T == in_gs.T[0]).all():
         print("Incorrect geneset format:", gs_name)
         return np.zeros(data.shape[1])
-    gs_expression = SparsePCA(n_components=1).fit_transform(in_gs.T)
+    in_gs = scale(in_gs.T)
+    gs_expression = SparsePCA(
+        n_components=1,
+        max_iter=800,
+    ).fit_transform(in_gs)
     return gs_expression.flatten()
 
 
@@ -28,7 +33,9 @@ def _svd(geneset, data, genes, gs_name=""):
     if (in_gs.T == in_gs.T[0]).all():
         print("Incorrect geneset format:", gs_name)
         return np.zeros(data.shape[1])
-    gs_expression = PCA(n_components=1).fit_transform(in_gs.T)
+    in_gs = scale(in_gs.T)
+    pca = PCA(n_components=1, svd_solver="full").fit(in_gs)
+    gs_expression = pca.transform(in_gs)
     return gs_expression.flatten()
 
 

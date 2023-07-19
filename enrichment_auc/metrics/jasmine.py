@@ -1,5 +1,6 @@
 import numpy as np
 from tqdm import tqdm
+from scipy.stats.mstats import rankdata
 
 
 def dropout(data):
@@ -8,7 +9,10 @@ def dropout(data):
 
 
 def rank_genes(masked_data):
-    ranks = (-masked_data).argsort(axis=0).argsort(axis=0) + 1
+    ranks = np.zeros(masked_data.data.shape)
+    N = np.count_nonzero(masked_data.mask == 0, axis=0)
+    good_idx = np.where(N != 0)
+    ranks[:, good_idx] = rankdata(masked_data[:, good_idx], axis=0, use_missing=False)
     ranks = np.ma.masked_array(ranks, masked_data.mask)
     return ranks
 
@@ -25,7 +29,6 @@ def JASMINE(genesets, data, genes):
     jasmine = np.empty((len(genesets), data.shape[1]))
     masked_data = dropout(data)
     ranks = rank_genes(masked_data)
-
     for i, (gs_name, geneset_genes) in tqdm(
         enumerate(genesets.items()), total=len(genesets)
     ):
