@@ -9,7 +9,12 @@ RUN apt-get update &&\
     gcc \
     curl \
     git \
-    ssh &&\
+    ssh \
+    openssl \
+    libssl-dev \
+    libcurl4-openssl-dev \
+    libxml2-dev \
+    r-base &&\
     rm -rf /var/lib/apt/lists/*
 ENV POETRY_HOME="/opt/poetry"
 RUN curl -sSL https://install.python-poetry.org | python -

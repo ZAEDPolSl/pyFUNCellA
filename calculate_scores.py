@@ -8,9 +8,7 @@ from time import time
 from enrichment_auc.metrics import (
     aucell,
     cerno,
-    # gsea,
-    # gsva,
-    # ssgsea,
+    gsea,
     ratio,
     svd,
     jasmine,
@@ -44,6 +42,8 @@ if __name__ == "__main__":
         jasmine.JASMINE,
         cerno.AUC,
         aucell.AUCELL,
+        gsea.GSVA,
+        gsea.SSGSEA,
     ]
     scores_names = [
         "ratios",
@@ -95,23 +95,6 @@ if __name__ == "__main__":
         )
         df.to_csv(outpath + "/" + cerno_names[i] + ".csv")
 
-    # get GSEA based scores:
-    # gsea_based_names = ["gsva", "ssgsea"]
-    # gsea_based_functions = [gsva.get_ranks, ssgsea.get_ranks]
-    # for i in range(len(gsea_based_names)):
-    #     del df_score, score
-    #     t = time()
-    #     ranks, _ = gsea_based_functions[i](gene_expr, genes)
-    #     score = gsea.GSEA(genesets, ranks, genes)
-    #     elapsed = time() - t
-    #     elapsed_times[scores_names.index(gsea_based_names[i])] = elapsed
-    #     df_ranks = pd.DataFrame(data=ranks, index=genes, columns=patients_names)
-    #     df_ranks.to_csv(outpath + "/ranks_" + gsea_based_names[i] + ".csv")
-    #     df_score = pd.DataFrame(
-    #         data=score, index=list(genesets.keys()), columns=patients_names
-    #     )
-    #     df_score.to_csv(outpath + "/" + gsea_based_names[i] + ".csv")
-    #     del ranks
     elapsed_times = pd.DataFrame(
         data=elapsed_times, index=scores_names, columns=["times"]
     )
