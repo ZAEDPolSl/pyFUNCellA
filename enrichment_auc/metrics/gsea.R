@@ -1,9 +1,9 @@
 if (!require("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
+    install.packages("BiocManager", repos = "http://cran.us.r-project.org")
 if (!require("GSVA", quietly = TRUE))
     BiocManager::install("GSVA")
 if (!require("rjson", quietly = TRUE))
-    install.packages("rjson")
+    install.packages("rjson", repos = "http://cran.us.r-project.org")
 
 library("rjson")
 library("GSVA")
@@ -11,7 +11,11 @@ library("GSVA")
 
 args <- commandArgs(trailingOnly=TRUE)
 method <- args[1]
-pathways <- fromJSON(file="tmp/genesets_genes.json")
-gene_expr <- read.csv("tmp/data.csv", row.names = 1, header= TRUE)
+outpath <- args[2]
+print("x")
+pathways <- fromJSON(file=paste(outpath, "tmp/genesets_genes.json", sep=""))
+gene_expr <- read.csv(paste(outpath, "tmp/data.csv",  sep=""), row.names = 1, header= TRUE)
+print("y")
 res <- gsva(as.matrix(gene_expr), pathways, method = method, kcdf = "Gaussian", mx.diff = F)
-write.csv(as.data.frame(res), paste("tmp/res.csv", sep=""))
+print("z")
+write.csv(as.data.frame(res), paste(outpath, "tmp/res.csv", sep=""))

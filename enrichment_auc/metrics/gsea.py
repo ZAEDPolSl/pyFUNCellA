@@ -13,8 +13,9 @@ def _run_analysis(genesets, data, genes, method):
     df.to_csv("tmp/data.csv")
     with open("tmp/genesets_genes.json", "w") as fp:
         json.dump(genesets, fp)
-    rscript = "gsea.R"
-    cmd = ["Rscript", rscript] + [x for x in [method]]
+    rscript = "enrichment_auc/metrics/gsea.R"
+    outpath = os.getcwd() + "/"
+    cmd = ["Rscript", rscript] + [x for x in [method, outpath]]
     destination = PIPE
     destination = sys.stderr
     sp = Popen(cmd, stdout=PIPE, stderr=destination)
