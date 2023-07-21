@@ -3,6 +3,7 @@ import sys
 
 import numpy as np
 import pandas as pd
+from time import time
 from tqdm import tqdm
 
 from enrichment_auc.distributions import (
@@ -12,22 +13,35 @@ from enrichment_auc.distributions import (
 )
 from enrichment_auc.plot.plot_distributed_data import plot_mixtures
 
+time_kmeans = 0
+time_gmm = 0
+
 
 def pipeline_for_dist(score, geneset_name, score_name, save_dir):
     score = np.nan_to_num(score)
     # get mixtures and thresholds
+    t0 = time()
     distributions = find_distribution(score, geneset_name)
+    t = time() - t0
+    global time_kmeans, time_gmm
+    time_kmeans += t
+    time_gmm += t
 
+    t0 = time()
     localizer_gmm = group_distributions(distributions, method="gmm")
-    localizer_kmeans = group_distributions(distributions, method="kmeans")
-
     thresholds_gmm = find_grouped_dist_thresholds(
         distributions, localizer_gmm, score, geneset_name
     )
+    t = time() - t0
+    time_gmm += t
 
+    t0 = time()
+    localizer_kmeans = group_distributions(distributions, method="kmeans")
     thresholds_kmeans = find_grouped_dist_thresholds(
         distributions, localizer_kmeans, score, geneset_name
     )
+    t = time() - t0
+    time_kmeans += t
 
     if np.var(score) != 0:
         thr_gmm = score.max()
@@ -183,5 +197,8 @@ if __name__ == "__main__":
                 geneset_info,
                 res_folder,
                 data_type,
-                score_name+"_abs",
+                score_name + "_abs",
             )
+
+    times = pd.DataFrame({"times": [time_gmm, time_kmeans]}, index=["top1", "kmeans"])
+    times.to_csv(res_folder + data_type + "/times_thrs.csv")
