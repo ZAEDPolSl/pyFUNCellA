@@ -107,18 +107,18 @@ def evaluate_pas(scores, gs_names, geneset_info, res_folder, data_type, score_na
         localizer_kmeans = localizer_kmeans.tolist()
         locs_kmeans.append(localizer_kmeans)
 
-    scores_thr.to_csv(res_folder + data_type + "/" + score_name + "_gmm_thr.csv")
+    scores_thr.to_csv(res_folder + data_type + "/gmm_thr/" + score_name + "_thr.csv")
     scores_thr_kmeans.to_csv(
-        res_folder + data_type + "/" + score_name + "_kmeans_thr.csv"
+        res_folder + data_type + "/kmeans_thr/" + score_name + "_thr.csv"
     )
 
     with open(
-        res_folder + data_type + "/" + score_name + "_gmm_loc.json",
+        res_folder + data_type + "/gmm_thr/" + score_name + "_loc.json",
         "w",
     ) as fout:
         json.dump(locs_gmm, fout)
     with open(
-        res_folder + data_type + "/" + score_name + "_kmeans_loc.json",
+        res_folder + data_type + "/kmeans_thr/" + score_name + "_loc.json",
         "w",
     ) as fout:
         json.dump(locs_kmeans, fout)
@@ -127,12 +127,12 @@ def evaluate_pas(scores, gs_names, geneset_info, res_folder, data_type, score_na
         json.dump(scores_dist, fout)
 
     with open(
-        res_folder + data_type + "/" + score_name + "_gmm_thrs.json",
+        res_folder + data_type + "/gmm_thr/" + score_name + "_thrs.json",
         "w",
     ) as fout:
         json.dump(gmm_thrs, fout)
     with open(
-        res_folder + data_type + "/" + score_name + "_kmeans_thrs.json",
+        res_folder + data_type + "/kmeans_thr/" + score_name + "_thrs.json",
         "w",
     ) as fout:
         json.dump(kmeans_thrs, fout)
@@ -183,5 +183,5 @@ if __name__ == "__main__":
                 geneset_info,
                 res_folder,
                 data_type,
-                "abs_" + score_name,
+                score_name+"_abs",
             )
