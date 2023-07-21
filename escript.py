@@ -66,6 +66,7 @@ def pipeline_for_dist(score, geneset_name, score_name, save_dir):
 
 
 def evaluate_pas(scores, gs_names, geneset_info, res_folder, data_type, score_name):
+    print(score_name)
     scores_thr = pd.DataFrame(0, index=gs_names, columns=np.arange(1))
     scores_thr_kmeans = pd.DataFrame(0, index=gs_names, columns=np.arange(1))
     scores_dist = []
@@ -164,7 +165,6 @@ if __name__ == "__main__":
         data_folder + "filtered_genesets_modules.csv", index_col=0
     )
     for score_name in tqdm(score_names):
-        print(score_name)
         # get scores
         scores = pd.read_csv(
             res_folder + data_type + "/" + score_name + ".csv",
