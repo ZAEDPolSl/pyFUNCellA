@@ -2,11 +2,22 @@
 # poetry install
 # poetry build
 # declare -a data_types=('seurat' 'row')
-declare -a data_types=('seurat')
-data_folder="data\Liver\\"
-res_folder="results\Liver\\"
-save_dir="plots\Liver"
+declare -a norms=('seurat')
+data_type='Liver'
+
+data_folder="data/${data_type}/"
+res_folder="results/${data_type}/"
+plot_folder="plots/${data_type}"
 # Iterate the string array using for loop
-for data_type in ${data_types[@]}; do
-     python escript.py $data_type $res_folder $save_dir $data_folder
+for norm in ${norms[@]}; do
+     python escript.py $norm $res_folder $plot_folder $data_folder
+     # zip results
+    cd $"${res_folder}${norm}"
+    zip "${norm}.zip" *.json
+    zip -r "${norm}.zip" kmeans_thr/ gmm_thr/
+    zip -r "${norm}.zip" times_thrs.csv
+    cd $"../../../${plot_folder}/${norm}"
+    zip -r "${norm}.zip" kmeans/ top1/
+    find . -type f -iname \*.png -delete
+    cd ../../../
 done
