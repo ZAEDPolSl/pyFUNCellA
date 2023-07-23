@@ -41,7 +41,7 @@ def plot_mixtures(
     # show density plot and histogram
     try:
         _ = sns.histplot(score, color="#B0B0B0", alpha=0.25, kde=False, stat="density")
-    except np.core._exceptions._ArrayMemoryError:
+    except (ValueError, np.core._exceptions._ArrayMemoryError):
         sns.histplot(
             x=score,
             element="step",
