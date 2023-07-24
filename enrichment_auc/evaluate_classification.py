@@ -44,7 +44,7 @@ class Scores:
             resfolder
             + "confusion_matrix_"
             + plottype
-            + "\\"
+            + "/"
             + gs_name
             + "_"
             + scorename

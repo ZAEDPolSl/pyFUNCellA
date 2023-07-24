@@ -1,3 +1,4 @@
+import os
 import sys
 import pandas as pd
 
@@ -42,11 +43,14 @@ if __name__ == "__main__":
     norm = sys.argv[2]
     clustertype = sys.argv[3]
     datafolder = sys.argv[4]
-    resfolder = sys.argv[5]
+    resfolder = sys.argv[5] + tissue + "/" + norm + "/"
 
     plottype = clustertype
     if clustertype != "kmeans":
         plottype = "top1"
+        
+    if not os.path.isdir(resfolder+"confusion_matrix_"+plottype):
+        os.makedirs(resfolder+"confusion_matrix_"+plottype)
 
     paths = pd.read_csv(datafolder + "chosen_paths.txt", sep="\t", index_col=0)
     geneset_info = pd.read_csv(
@@ -85,7 +89,7 @@ if __name__ == "__main__":
             scores = pd.read_csv(resfolder + scorename + ".csv", index_col=0)
         scores = scores.loc[:, not_pre_B]
         thresholds = pd.read_csv(
-            resfolder + scorename + "_" + clustertype + "_thr" ".csv", index_col=0
+            resfolder + "/" + clustertype + "_thr/" + scorename + "_thr.csv", index_col=0
         )
         eval = Scores()
         for index, row in to_save.iterrows():
