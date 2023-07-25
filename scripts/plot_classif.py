@@ -66,12 +66,12 @@ for plottype in plottypes:
     merged[plottype] = pd.concat([data[tissue][plottype] for tissue in tissues])
     groups = merged[plottype].groupby(["Celltype"])["Celltype"].count()
     celltypes = groups[groups > 2].keys().tolist()
-    visualize_methods(merged[plottype], celltypes, names, plotfolder)
+    visualize_methods(merged[plottype], celltypes, names, plot_folder)
 
 # do violin plots of differences between thr methods per whole
 for x, y in list(combinations(plottypes, 2)):
     plot_folder = plotfolder + "/merged/" + norm + "/" + x + "_" + y + "/"
-    if not os.path.isdir(plot_folder):
+    if not os.path.isdir(plot_folder):        
         os.makedirs(plot_folder)
     for celltype in celltypes:
         df1 = merged[x].loc[merged[x]["Celltype"] == celltype]
