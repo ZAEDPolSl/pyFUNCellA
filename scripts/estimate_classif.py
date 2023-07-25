@@ -46,7 +46,7 @@ if __name__ == "__main__":
     resfolder = sys.argv[5] + tissue + "/" + norm + "/"
 
     plottype = clustertype
-    if clustertype != "kmeans":
+    if clustertype == "gmm":
         plottype = "top1"
         
     if not os.path.isdir(resfolder+"confusion_matrix_"+plottype):

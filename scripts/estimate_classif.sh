@@ -1,7 +1,7 @@
 #! /bin/bash
 norm='seurat'
 declare -a data_types=("PBMC" "Liver" "COVID" "BM")
-declare -a cluster_types=('gmm' 'kmeans')
+declare -a cluster_types=('gmm' 'kmeans' 'AUCell')
 
 data_folder="data/"
 res_folder="results/"
