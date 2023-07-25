@@ -27,19 +27,19 @@ palette = {
     "AUCell": "#077187",
     "CERNO": "#398D9F",
     "CERNO F": "#42A8BD",
-    "JASMINE": "#6AAAB7​",
+    "JASMINE": "#6AAAB7",
     "DropRatio": "#586BA4",
-    "Mean": "#F4A460​",
+    "Mean": "#F4A460",
     "Vision": "#FFC125",
-    "Vision abs": "#ffc125b5",
+    "Vision abs": "rgba(255,193,37,0.71)",
     "z-score": "#FFD700",
-    "z-score abs": "#ffd700b5",
+    "z-score abs": "rgba(255,215,0,0.71)",
     "PLAGE": "#A54D69",
-    "PLAGE abs": "#a54d69b5",
+    "PLAGE abs": "rgba(165,77,105,0.71)",
     "SparsePCA": "#BC7A8F",
-    "SparsePCA abs": "#bc7a8fb5",
-    "GSVA": "#228B22​",
-    "ssGSEA": "#006400​",
+    "SparsePCA abs": "rgba(188,122,143,0.71)",
+    "GSVA": "#228B22",
+    "ssGSEA": "#006400",
     # "VAE": "#000000"
 }
 
@@ -139,6 +139,8 @@ def visualize_methods(df, cell_types, namescores, plot_folder):
                 template="plotly_white",
                 labels={"method": "PAS method", "value": name[:-1].replace("_", " ")},
                 category_orders={"method": list(plot_scorenames.keys())},
+                height=600,
+                width=700,
             )
             fig = mark_different_boxes(fig, pvals)
             fig.update_xaxes(tickangle=45)
@@ -147,7 +149,7 @@ def visualize_methods(df, cell_types, namescores, plot_folder):
             )
 
 
-def visualize_difference(df1, df2, namescores, plot_folder):
+def visualize_difference(df1, df2, namescores, plot_folder, name1, name2):
     df = df1.subtract(df2)
     for name in namescores:
         vis = df.loc[:, df.columns.str.contains(name)]
@@ -163,8 +165,13 @@ def visualize_difference(df1, df2, namescores, plot_folder):
             color_discrete_map=palette,
             title=name[:-1].replace("_", " "),
             template="plotly_white",
-            labels={"method": "PAS method", "value": "Difference [Top1 - k-means]"},
+            labels={
+                "method": "PAS method",
+                "value": "Difference [{} - {}]".format(name1, name2),
+            },
             category_orders={"method": list(plot_scorenames.keys())},
+            height=600,
+            width=700,
         )
         fig.add_hline(y=0.0, line=dict(dash="dash", color="firebrick", width=1))
         fig.update_xaxes(tickangle=45)
@@ -186,8 +193,10 @@ def visualize_difference(df1, df2, namescores, plot_folder):
                     showarrow=False,
                     font=dict(size=10, color="red"),
                 )
+        if name[:-1] == "FDR":
+            name1, name2 = name2, name1
         fig.add_annotation(
-            text="Better Top1",
+            text="Better {}".format(name1),
             name="p-value",
             x=0.5,
             y=vis["value"].max() + 0.15,
@@ -196,7 +205,7 @@ def visualize_difference(df1, df2, namescores, plot_folder):
             font=dict(size=12, color="black"),
         )
         fig.add_annotation(
-            text="Better k-means",
+            text="Better {}".format(name2),
             name="p-value",
             x=0.5,
             y=vis["value"].min() - 0.15,
