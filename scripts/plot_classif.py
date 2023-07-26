@@ -71,7 +71,7 @@ for plottype in plottypes:
 # do violin plots of differences between thr methods per whole
 for x, y in list(combinations(plottypes, 2)):
     plot_folder = plotfolder + "/merged/" + norm + "/" + x + "_" + y + "/"
-    if not os.path.isdir(plot_folder):        
+    if not os.path.isdir(plot_folder):
         os.makedirs(plot_folder)
     for celltype in celltypes:
         df1 = merged[x].loc[merged[x]["Celltype"] == celltype]
