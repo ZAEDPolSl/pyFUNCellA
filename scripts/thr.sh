@@ -3,14 +3,14 @@
 # poetry build
 # declare -a data_types=('seurat' 'row')
 declare -a norms=('seurat')
-data_type='Liver'
+data_type='Pancreas'
 
 data_folder="data/${data_type}/"
 res_folder="results/${data_type}/"
 plot_folder="plots/${data_type}"
 # Iterate the string array using for loop
 for norm in ${norms[@]}; do
-     python escript.py $norm $res_folder $plot_folder $data_folder
+     python scripts/escript.py $norm $res_folder $plot_folder $data_folder
      # zip results
     cd $"${res_folder}${norm}"
     zip "${norm}.zip" *.json
