@@ -52,11 +52,22 @@ for tissue in tissues:
         if not os.path.isdir(plot_folder):
             os.makedirs(plot_folder)
         for celltype in celltypes:
+            subfolder = plot_folder + celltype + "/"
+            if not os.path.isdir(subfolder):
+                os.makedirs(subfolder)
             df1 = data[tissue][x].loc[data[tissue][x]["Celltype"] == celltype]
             df2 = data[tissue][y].loc[data[tissue][y]["Celltype"] == celltype]
             visualize_difference(
-                df1.drop(columns=cols), df2.drop(columns=cols), names, plot_folder, x, y
+                df1.drop(columns=cols), df2.drop(columns=cols), names, subfolder, x, y
             )
+        visualize_difference(
+            data[tissue][x].drop(columns=cols),
+            data[tissue][y].drop(columns=cols),
+            names,
+            plot_folder,
+            x,
+            y)
+
 print("merged")
 # do violin plots of each thr method per whole
 for plottype in plottypes:
@@ -67,6 +78,9 @@ for plottype in plottypes:
     groups = merged[plottype].groupby(["Celltype"])["Celltype"].count()
     celltypes = groups[groups > 2].keys().tolist()
     visualize_methods(merged[plottype], celltypes, names, plot_folder)
+    df = merged[plottype]
+    df["Celltype"] = "merged"
+    visualize_methods(df, ["merged"], names, plot_folder)
 
 # do violin plots of differences between thr methods per whole
 for x, y in list(combinations(plottypes, 2)):
@@ -74,10 +88,13 @@ for x, y in list(combinations(plottypes, 2)):
     if not os.path.isdir(plot_folder):
         os.makedirs(plot_folder)
     for celltype in celltypes:
+        subfolder = plot_folder + celltype + "/"
+        if not os.path.isdir(subfolder):
+            os.makedirs(subfolder)
         df1 = merged[x].loc[merged[x]["Celltype"] == celltype]
         df2 = merged[y].loc[merged[y]["Celltype"] == celltype]
         visualize_difference(
-            df1.drop(columns=cols), df2.drop(columns=cols), names, plot_folder, x, y
+            df1.drop(columns=cols), df2.drop(columns=cols), names, subfolder, x, y
         )
     visualize_difference(
         merged[x].drop(columns=cols),

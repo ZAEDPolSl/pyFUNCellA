@@ -1,4 +1,5 @@
 import json
+import os
 import sys
 
 import numpy as np
@@ -121,6 +122,11 @@ def evaluate_pas(scores, gs_names, geneset_info, res_folder, data_type, score_na
         locs_gmm.append(localizer_gmm)
         localizer_kmeans = localizer_kmeans.tolist()
         locs_kmeans.append(localizer_kmeans)
+    
+    if not os.path.isdir(res_folder + data_type + "/gmm_thr/"):
+            os.makedirs(res_folder + data_type + "/gmm_thr/")
+    if not os.path.isdir(res_folder + data_type + "/kmeans_thr/"):
+            os.makedirs(res_folder + data_type + "/kmeans_thr/")
 
     scores_thr.to_csv(res_folder + data_type + "/gmm_thr/" + score_name + "_thr.csv")
     scores_thr_kmeans.to_csv(
