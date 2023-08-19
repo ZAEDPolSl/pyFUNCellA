@@ -114,8 +114,11 @@ def _group_by_gmm(distributions):
     diff = distributions["mu"] + distributions["sigma"]
     diff = np.roll(diff, 1)
     # checking the first component for falling back just in case
+    # mean0 > mean1 - sigma1
+    # 2*mean0 > mean0 + mean1 - sigma1
+    # 2*mean0 - mean1 + sigma1 > mean0
     if distributions["mu"].size > 1:
-        diff[0] = distributions["mu"][1] - distributions["sigma"][1]
+        diff[0] = 2*distributions["mu"][0] - distributions["mu"][1] + distributions["sigma"][1]
     else:
         diff[0] = distributions["mu"][0]
 
