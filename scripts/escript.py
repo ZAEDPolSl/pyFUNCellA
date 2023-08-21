@@ -213,8 +213,8 @@ if __name__ == "__main__":
     embed = None
     labels_arr = None
     if os.path.isfile(data_folder + "tsne.csv"):
-        embed = pd.read_csv(data_folder + "tsne.csv", index_col=0)
-        embed = embed.to_numpy().astype(float)
+        embed = pd.read_csv(data_folder + "tsne.csv")
+        embed = embed.select_dtypes(['number']).to_numpy().astype(float)
     if os.path.isfile(data_folder + "true_labels.csv"):
         labels_arr = pd.read_csv(data_folder + "true_labels.csv", index_col=0)
         labels_arr = labels_arr["CellType"].to_numpy()
