@@ -81,4 +81,6 @@ def plot_flow(
 
     labels_len = np.unique(labels).shape[0]
     fig = clean_up_layout(fig, gs_name, labels_len, embed_name)
+    gs_name = gs_name.replace("/", "_")
+    gs_name = gs_name.replace(":", "_")
     fig.write_html(save_dir + "scatter_{}_{}.html".format(gs_name, name))
