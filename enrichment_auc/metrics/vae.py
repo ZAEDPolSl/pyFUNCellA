@@ -31,7 +31,8 @@ class VAE(BaseEstimator, TransformerMixin):
         self.random_state = random_state
 
     def fit(self, X, y=None):
-        # normalize X
+        div = X.sum(axis=1, keepdims=True)
+        X = np.divide(X, div, out=np.zeros_like(X), where=div != 0)
         vae_bn = VAE_BN(
             nSpecFeatures=X.shape[1],
             intermediate_dim=self.intermediate_dim,
@@ -43,6 +44,7 @@ class VAE(BaseEstimator, TransformerMixin):
         )
         self.history_ = self.vae_.fit(
             X,
+            verbose=self.verbose,
             epochs=self.epochs,
             batch_size=self.batch_size,
             shuffle=self.shuffle,
@@ -50,8 +52,9 @@ class VAE(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X, y=None):
-        # normalize X
-        return self.encoder_.predict(X)[2]
+        div = X.sum(axis=1, keepdims=True)
+        X = np.divide(X, div, out=np.zeros_like(X), where=div != 0)
+        return self.encoder_.predict(X, verbose=self.verbose)[2]
 
 
 def _vae_pas(geneset, data, genes, gs_name=""):
