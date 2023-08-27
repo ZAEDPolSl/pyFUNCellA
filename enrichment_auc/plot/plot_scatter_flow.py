@@ -29,6 +29,8 @@ def clean_up_layout(fig, gs_name, labels_len, embed_name):
 
 def prepare_subplot(fig, embed, labels, subplot_name, row):
     palette = px.colors.qualitative.Bold
+    if np.unique(labels).shape[0] > 11:
+        palette = px.colors.qualitative.Light24
     for i, label in enumerate(np.unique(labels)):
         cell_idx = np.where(labels == label)[0]
         fig.add_trace(

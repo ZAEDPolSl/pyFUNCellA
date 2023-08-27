@@ -78,7 +78,7 @@ for plottype in plottypes:
     groups = merged[plottype].groupby(["Celltype"])["Celltype"].count()
     celltypes = groups[groups > 2].keys().tolist()
     visualize_methods(merged[plottype], celltypes, names, plot_folder)
-    df = merged[plottype]
+    df = merged[plottype].copy(deep=True)
     df["Celltype"] = "merged"
     visualize_methods(df, ["merged"], names, plot_folder)
 
