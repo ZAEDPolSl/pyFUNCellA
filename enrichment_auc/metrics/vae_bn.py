@@ -3,7 +3,7 @@ from tensorflow.keras.initializers import GlorotUniform
 from tensorflow.keras.layers import BatchNormalization, Dense, Input, Lambda, ReLU
 from tensorflow.keras.losses import categorical_crossentropy
 from tensorflow.keras.models import Model
-from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.optimizers.legacy import Adam
 
 # from tensorflow.keras.utils import plot_model
 from tensorflow.random import set_seed
