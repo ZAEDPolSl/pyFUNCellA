@@ -1,4 +1,5 @@
 import numpy as np
+
 import enrichment_auc.distributions as dist
 
 
@@ -21,44 +22,133 @@ def test_categorize_by_thresholds_no_thr():
     np.testing.assert_array_equal(groupings, labels)
 
 
-def remove_redundant_thresholds_start():
-    scores = np.linspace(0, 1, 100)
-    thresholds = np.array([0])
-    thr_found = dist._remove_redundant_thresholds(thresholds, scores)
-    assert thr_found.shape[0] == 0
+def test_filter_thresholds_retains_thresholds():
+    localizer = np.array([0, 1, 2])
+    mu = np.array([0, 1, 2])
+    thresholds = np.array([0.5, 1.5])
+    thr_found = dist._filter_thresholds(localizer, mu, thresholds)
+    np.testing.assert_array_equal(thr_found, thresholds)
 
 
-def remove_redundant_thresholds_before():
-    scores = np.linspace(0, 1, 100)
-    thresholds = np.array([-0.01])
-    thr_found = dist._remove_redundant_thresholds(thresholds, scores)
-    assert thr_found.shape[0] == 0
+def test_filter_thresholds_retains_thresholds_mixed_up():
+    localizer = np.array([0, 1, 0])
+    mu = np.array([0, 1, 2])
+    thresholds = np.array([0.5, 1.5])
+    thr_found = dist._filter_thresholds(localizer, mu, thresholds)
+    np.testing.assert_array_equal(thr_found, thresholds)
 
 
-def remove_redundant_thresholds_end():
-    scores = np.linspace(0, 1, 100)
-    thresholds = np.array([1])
-    thr_found = dist._remove_redundant_thresholds(thresholds, scores)
-    assert thr_found.shape[0] == 0
+def test_filter_thresholds_removes_single_thresholds():
+    localizer = np.array([1, 1, 0])
+    mu = np.array([0, 1, 2])
+    thresholds = np.array([0.5, 1.5])
+    thr_found = dist._filter_thresholds(localizer, mu, thresholds)
+    np.testing.assert_array_equal(thr_found, np.array([1.5]))
 
 
-def remove_redundant_thresholds_after():
-    scores = np.linspace(0, 1, 100)
-    thresholds = np.array([1.01])
-    thr_found = dist._remove_redundant_thresholds(thresholds, scores)
-    assert thr_found.shape[0] == 0
+def test_filter_thresholds_removes_multiple_thresholds_one_label():
+    localizer = np.array([0, 1, 1, 1])
+    mu = np.array([0, 1, 2, 3])
+    thresholds = np.array([0.5, 1.5, 2.5])
+    thr_found = dist._filter_thresholds(localizer, mu, thresholds)
+    np.testing.assert_array_equal(thr_found, np.array([0.5]))
 
 
-def remove_redundant_thresholds_mixed_ends():
-    scores = np.linspace(0, 1, 100)
-    thresholds = np.array([0, 1.0])
-    thr_found = dist._remove_redundant_thresholds(thresholds, scores)
-    assert thr_found.shape[0] == 0
+def test_filter_thresholds_removes_multiple_thresholds_diff_label():
+    localizer = np.array([0, 0, 1, 1])
+    mu = np.array([0, 1, 2, 3])
+    thresholds = np.array([0.5, 1.5, 2.5])
+    thr_found = dist._filter_thresholds(localizer, mu, thresholds)
+    np.testing.assert_array_equal(thr_found, np.array([1.5]))
 
 
-def remove_redundant_thresholds_mix():
-    scores = np.linspace(0, 1, 100)
-    thresholds = np.array([0, 0.5, 0.75, 1.0])
-    thr_found = dist._remove_redundant_thresholds(thresholds, scores)
-    thr_expected = np.array([0.5, 0.75])
-    np.testing.assert_array_equal(thr_found, thr_expected)
+def test_merge_gmm_retains_dists():
+    mu = np.array([0, 5, 10, 15])
+    sigma = np.array([1, 2, 3, 4])
+    weights = np.array([0.25, 0.25, 0.25, 0.25])
+    dists = {
+        "sigma": sigma,
+        "mu": mu,
+        "weights": weights,
+    }
+    pred_dist = dist._merge_gmm(dists)
+    np.testing.assert_array_equal(mu, pred_dist["mu"])
+    np.testing.assert_array_equal(weights, pred_dist["weights"])
+    np.testing.assert_array_equal(sigma, pred_dist["sigma"])
+
+
+def test_merge_gmm_merges_dists_sigma():
+    mu = np.array([0.0, 9.5, 10.0, 15])
+    sigma = np.array([1.0, 2.0, 3, 4])
+    weights = np.array([0.25, 0.25, 0.25, 0.25])
+    dists = {
+        "sigma": sigma,
+        "mu": mu,
+        "weights": weights,
+    }
+    pred_dist = dist._merge_gmm(dists)
+    np.testing.assert_array_almost_equal(np.array([0, 9.75, 15]), pred_dist["mu"])
+    np.testing.assert_array_equal(np.array([0.25, 0.5, 0.25]), pred_dist["weights"])
+    np.testing.assert_array_almost_equal(
+        np.array([1.0, 3.37268439, 4]), pred_dist["sigma"]
+    )
+
+
+def test_merge_gmm_merges_dists_alpha():
+    mu = np.array([-5.0, 0.0, 10.0, 15])
+    sigma = np.array([2.0, 1.0, 3, 4])
+    weights = np.array([0.4999, 0.0001, 0.25, 0.25])
+    dists = {
+        "sigma": sigma,
+        "mu": mu,
+        "weights": weights,
+    }
+    pred_dist = dist._merge_gmm(dists)
+    np.testing.assert_array_almost_equal(np.array([-4.999, 10, 15]), pred_dist["mu"])
+    np.testing.assert_array_equal(np.array([0.5, 0.25, 0.25]), pred_dist["weights"])
+    np.testing.assert_array_almost_equal(
+        np.array([1.9985995, 3, 4]), pred_dist["sigma"]
+    )
+
+
+# def remove_redundant_thresholds_start():
+#     scores = np.linspace(0, 1, 100)
+#     thresholds = np.array([0])
+#     thr_found = dist._remove_redundant_thresholds(thresholds, scores)
+#     assert thr_found.shape[0] == 0
+
+
+# def remove_redundant_thresholds_before():
+#     scores = np.linspace(0, 1, 100)
+#     thresholds = np.array([-0.01])
+#     thr_found = dist._remove_redundant_thresholds(thresholds, scores)
+#     assert thr_found.shape[0] == 0
+
+
+# def remove_redundant_thresholds_end():
+#     scores = np.linspace(0, 1, 100)
+#     thresholds = np.array([1])
+#     thr_found = dist._remove_redundant_thresholds(thresholds, scores)
+#     assert thr_found.shape[0] == 0
+
+
+# def remove_redundant_thresholds_after():
+#     scores = np.linspace(0, 1, 100)
+#     thresholds = np.array([1.01])
+#     thr_found = dist._remove_redundant_thresholds(thresholds, scores)
+#     assert thr_found.shape[0] == 0
+
+
+# def remove_redundant_thresholds_mixed_ends():
+#     scores = np.linspace(0, 1, 100)
+#     thresholds = np.array([0, 1.0])
+#     thr_found = dist._remove_redundant_thresholds(thresholds, scores)
+#     assert thr_found.shape[0] == 0
+
+
+# def remove_redundant_thresholds_mix():
+#     scores = np.linspace(0, 1, 100)
+#     thresholds = np.array([0, 0.5, 0.75, 1.0])
+#     thr_found = dist._remove_redundant_thresholds(thresholds, scores)
+#     thr_expected = np.array([0.5, 0.75])
+#     np.testing.assert_array_equal(thr_found, thr_expected)

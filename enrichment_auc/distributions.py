@@ -7,7 +7,42 @@ from sklearn.metrics import silhouette_score
 from enrichment_auc._matlab_legacy import find_gaussian_mixtures
 
 
-def find_distribution(scores, gs_name=""):
+def _merge_gmm(dist, sigma_dev=1.0, alpha_limit=0.001):
+    KS = dist["mu"].size  # components number
+    mu = np.array([dist["mu"][0]])
+    sigma = np.array([dist["sigma"][0]])
+    alpha = np.array([dist["weights"][0]])
+    for i in range(1, KS):
+        mu_diff = dist["mu"][i] - mu[-1]
+        min_displacement = np.min(np.append(sigma, dist["sigma"][i])) * sigma_dev
+        if mu_diff < min_displacement or dist["weights"][i] < alpha_limit:
+            # merge
+            pp_est = np.array([dist["weights"][i], alpha[-1]])
+            mu_est = np.array([dist["mu"][i], mu[-1]])
+            sigma_est = np.array([dist["sigma"][i], sigma[-1]])
+            ww_temp = np.sum(pp_est)
+            mu_temp = (
+                dist["weights"][i] * dist["mu"][i] + alpha[-1] * mu[-1]
+            ) / ww_temp
+            sigma_temp = np.sqrt(
+                np.sum(pp_est * (mu_est**2 + sigma_est**2)) / ww_temp - mu[-1] ** 2
+            )
+            mu[-1] = mu_temp
+            sigma[-1] = sigma_temp
+            alpha[-1] = ww_temp
+        else:
+            # add new distribution
+            mu = np.append(mu, dist["mu"][i])
+            sigma = np.append(sigma, dist["sigma"][i])
+            alpha = np.append(alpha, dist["weights"][i])
+    return {
+        "weights": np.array(alpha),
+        "mu": np.array(mu),
+        "sigma": np.array(sigma),
+    }
+
+
+def find_distribution(scores, gs_name="", sigma_dev=1.0, alpha_limit=0.001):
     if np.var(scores) == 0:
         print("All scores were of the same value in {}.".format(gs_name))
         return {
@@ -45,10 +80,12 @@ def find_distribution(scores, gs_name=""):
                 "TIC": np.nan,
                 "l_lik": np.nan,
             }
-    return cur_dist
+    # merge the special cases
+    dist = _merge_gmm(cur_dist, sigma_dev, alpha_limit)
+    return dist
 
 
-def find_pdfs(mu, sig, alpha, x_temp, localizer):
+def find_pdfs(mu, sig, alpha, x_temp):
     x_temp = x_temp.reshape(
         x_temp.shape[0], -1
     )  # so that scipy can recast it together with distribution parameters
@@ -56,10 +93,7 @@ def find_pdfs(mu, sig, alpha, x_temp, localizer):
         stats.norm.pdf(x_temp, mu, sig) * alpha
     )  # calculate pdfs for all distributions
     pdfs = pdfs.transpose()
-    unique_loc, pdfs = npi.group_by(localizer).sum(
-        pdfs
-    )  # sum them up based on their localizer value
-    return pdfs, unique_loc
+    return pdfs
 
 
 def find_crossing(pdf1, pdf2, mu1, mu2, x_temp):
@@ -79,127 +113,83 @@ def find_crossing(pdf1, pdf2, mu1, mu2, x_temp):
     return thrs[0]
 
 
-def find_dist_crossings(distributions, localizer, unique_loc, pdfs, x_temp, gs_name):
-    if (
-        unique_loc.size == 1
-    ):  # all the distributions are grouped up together, no crossings detected
-        print("All distributions are grouped together for {}.".format(gs_name))
+def _remove_redundant_thresholds(thresholds, scores, counter):
+    if thresholds.shape[0] == 0:
+        return thresholds
+    if len(np.where(scores > thresholds[-1])[0]) <= 1:
+        # thresholds = thresholds[:-1]
+        # if thresholds.shape[0] == 0:
+        #     return thresholds
+        counter += 1
+    if len(np.where(scores <= thresholds[0])[0]) <= 1:
+        # thresholds = thresholds[1:]
+        counter += 1
+    return thresholds, counter
+
+
+def find_thresholds(distributions, scores, gs_name, counter):
+    # for one distribution only
+    if distributions["mu"].size == 0:
         return np.array([])
     thresholds = []
-    for i in range(unique_loc.size - 1):
-        mu1 = distributions["mu"][np.where(localizer == unique_loc[i])][-1]
-        mu2 = distributions["mu"][np.where(localizer == unique_loc[i + 1])][-1]
-        thr = find_crossing(pdfs[i, :], pdfs[i + 1, :], mu1, mu2, x_temp)
-        if thr is not None:  # and thr != x_temp[-1] or x_temp[0] (approx)
-            thresholds.append(thr)
-    if len(thresholds) == 0:
-        print(
-            "{}: No crossings found for {} distributions.".format(
-                gs_name, unique_loc.size
-            )
+    x_temp = np.linspace(np.min(scores), np.max(scores), 10**6)
+    pdfs = find_pdfs(
+        distributions["mu"], distributions["sigma"], distributions["weights"], x_temp
+    )
+    for i in range(distributions["mu"].size - 1):
+        thr = find_crossing(
+            pdfs[i, :],
+            pdfs[i + 1, :],
+            distributions["mu"][i],
+            distributions["sigma"],
+            distributions["mu"][i + 1],
+            x_temp,
         )
-    elif len(thresholds) != unique_loc.size - 1:
+        if thr is not None:
+            thresholds.append(thr)
+    if len(thresholds) != distributions["mu"].size - 1:
         print(
-            "{}: {} thresholds found for {} distributions.".format(
-                gs_name, len(thresholds), unique_loc.size
+            "{}: {} thresholds fonud for {} distributions.".format(
+                gs_name, len(thresholds), distributions["mu"].size
             )
         )
     thresholds = np.array(thresholds)
-    return thresholds
+    thresholds, counter = _remove_redundant_thresholds(thresholds, scores, counter)
+    return thresholds, counter
 
 
-def _group_by_gmm(distributions):
-    # check distributions' grouping
-    localizer = np.arange(distributions["mu"].size, dtype=np.int8)
-    diff = distributions["mu"] + distributions["sigma"]
-    diff = np.roll(diff, 1)
-    # checking the first component for falling back just in case
-    # mean0 > mean1 - sigma1
-    # 2*mean0 > mean0 + mean1 - sigma1
-    # 2*mean0 - mean1 + sigma1 > mean0
-    if distributions["mu"].size > 1:
-        diff[0] = 2*distributions["mu"][0] - distributions["mu"][1] + distributions["sigma"][1]
-    else:
-        diff[0] = distributions["mu"][0]
-
-    diff_merge = np.where(distributions["mu"] < diff)[0]
-    weight_merge = np.where(distributions["weights"] < 0.001)[0]
-    merge = np.unique(np.concatenate((diff_merge, weight_merge)))
-    for i in merge:
-        if i == 0:
-            localizer[i] = localizer[i + 1]
-        else:
-            localizer[i] = localizer[i - 1]
-    # clean them up to start from 0 and change by 1
-    localizer = np.unique(localizer, return_inverse=True)[1]
-    return localizer
-
-
-def _group_by_kmeans(distributions):
+def correct_via_kmeans(distributions, thresholds):
     if distributions["mu"].size == 2:
-        return np.array([0, 1])
-    mu = np.array(distributions["mu"])
-    sig = np.array(distributions["sigma"])
-    features = np.stack([mu, mu - sig, mu + sig]).T
-    # calculate Kmeans on the parameters of the distributions
+        return thresholds
+    mu = distributions["mu"]
+    sig = distributions["sigma"]
+    alpha = distributions["weights"]
+    features = np.stack([mu, sig, alpha]).T
+    # scale the features
+    features = features - features.min(axis=0)[:, None]
+    features = features / features.max(axis=0)[:, None]
     best_sil = -1.1
     localizer = np.zeros(mu.size)
-    best_centers = np.zeros((1, features.shape[1]))
     for k in range(2, mu.size - 1):
         km = KMeans(k, n_init="auto")
         labels = km.fit_predict(features)
         sil = silhouette_score(features, labels)
         if sil > best_sil:
             best_sil = sil
-            best_centers = km.cluster_centers_
             localizer = labels
-    # make them go in correct order
-    localizer = np.nonzero(localizer[:, None] == best_centers[:, 0].argsort())[1]
-    return localizer
-
-
-def group_distributions(distributions, method="gmm"):
-    if distributions["mu"].size <= 1:
-        return np.zeros(distributions["mu"].size)
-    if method == "gmm":
-        return _group_by_gmm(distributions)
-    if method == "kmeans":
-        return _group_by_kmeans(distributions)
-    print("no such method existing.")
-    return np.zeros(distributions["mu"].size)
-
-
-def _remove_redundant_thresholds(thresholds, scores):
-    if thresholds.shape[0] == 0:
-        return thresholds
-    if len(np.where(scores > thresholds[-1])[0]) <= 1:
-        thresholds = thresholds[:-1]
-        if thresholds.shape[0] == 0:
-            return thresholds
-    if len(np.where(scores <= thresholds[0])[0]) <= 1:
-        thresholds = thresholds[1:]
+    thresholds = _filter_thresholds(localizer, mu, thresholds)
     return thresholds
 
 
-def find_grouped_dist_thresholds(distributions, localizer, scores, gs_name):
-    # if there is only one distribution/all are grouped together
-    if localizer.size <= 1 or np.unique(localizer).size == 1:
-        return np.array([])
-    # find pdfs
-    x_temp = np.linspace(np.min(scores), np.max(scores), 10**6)
-    # remove unique_loc possibly - cleaned that up
-    pdfs, unique_loc = find_pdfs(
-        distributions["mu"],
-        distributions["sigma"],
-        distributions["weights"],
-        x_temp,
-        localizer,
-    )
-    # find the crossings between the distributions
-    thresholds = find_dist_crossings(
-        distributions, localizer, unique_loc, pdfs, x_temp, gs_name
-    )
-    thresholds = _remove_redundant_thresholds(thresholds, scores)
+def _filter_thresholds(localizer, mu, thresholds):
+    # sort the clusters to go in the correct order
+    _, group_min = npi.group_by(localizer).min(mu)
+    localizer = np.nonzero(localizer[:, None] == group_min.argsort())[1]
+    # check if neighbouring distributions are together
+    differences = np.diff(localizer)
+    if np.all(differences >= 0):
+        # perform the correction
+        thresholds = thresholds[np.where(differences)]
     return thresholds
 
 
