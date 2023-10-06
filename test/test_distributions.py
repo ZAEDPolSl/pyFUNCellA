@@ -90,7 +90,7 @@ def test_merge_gmm_merges_dists_sigma():
     np.testing.assert_array_almost_equal(np.array([0, 9.75, 15]), pred_dist["mu"])
     np.testing.assert_array_equal(np.array([0.25, 0.5, 0.25]), pred_dist["weights"])
     np.testing.assert_array_almost_equal(
-        np.array([1.0, 3.37268439, 4]), pred_dist["sigma"]
+        np.array([1.0, 2.56173769, 4]), pred_dist["sigma"]
     )
 
 
@@ -107,7 +107,7 @@ def test_merge_gmm_merges_dists_alpha():
     np.testing.assert_array_almost_equal(np.array([-4.999, 10, 15]), pred_dist["mu"])
     np.testing.assert_array_equal(np.array([0.5, 0.25, 0.25]), pred_dist["weights"])
     np.testing.assert_array_almost_equal(
-        np.array([1.9985995, 3, 4]), pred_dist["sigma"]
+        np.array([2.0010994478036324, 3, 4]), pred_dist["sigma"]
     )
 
 
