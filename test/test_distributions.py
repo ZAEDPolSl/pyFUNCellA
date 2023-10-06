@@ -152,3 +152,30 @@ def test_merge_gmm_merges_dists_alpha():
 #     thr_found = dist._remove_redundant_thresholds(thresholds, scores)
 #     thr_expected = np.array([0.5, 0.75])
 #     np.testing.assert_array_equal(thr_found, thr_expected)
+
+
+def test_correct_via_kmeans_skips_smaller_than_2():
+    distributions_0 = {
+        "mu": np.array([]),
+        "sigma": np.array([]),
+        "weights": np.array([]),
+    }
+    distributions_1 = {
+        "mu": np.array([0]),
+        "sigma": np.array([1.0]),
+        "weights": np.array([1.0]),
+    }
+    distributions_2 = {
+        "mu": np.array([0, 1]),
+        "sigma": np.array([1, 1]),
+        "weights": np.array([0.5, 0.5]),
+    }
+    thresholds_0 = np.array([])
+    thresholds_1 = np.array([])
+    thresholds_2 = np.array([0.5])
+    thr_found_0 = dist.correct_via_kmeans(distributions_0, thresholds_0)
+    thr_found_1 = dist.correct_via_kmeans(distributions_1, thresholds_1)
+    thr_found_2 = dist.correct_via_kmeans(distributions_2, thresholds_2)
+    np.testing.assert_array_equal(thr_found_0, thresholds_0)
+    np.testing.assert_array_equal(thr_found_1, thresholds_1)
+    np.testing.assert_array_equal(thr_found_2, thresholds_2)
