@@ -22,10 +22,10 @@ def _merge_gmm(dist, sigma_dev=1.0, alpha_limit=0.001):
             mu_est = np.array([dist["mu"][i], mu[-1]])
             sigma_est = np.array([dist["sigma"][i], sigma[-1]])
             ww_temp = np.sum(pp_est)
-            mu[-1] = (
-                dist["weights"][i] * dist["mu"][i] + alpha[-1] * mu[-1]
-            ) / ww_temp
-            sigma[-1] = np.sqrt(np.sum(pp_est * (mu_est**2 + sigma_est**2)) / ww_temp - mu[-1] ** 2)
+            mu[-1] = (dist["weights"][i] * dist["mu"][i] + alpha[-1] * mu[-1]) / ww_temp
+            sigma[-1] = np.sqrt(
+                np.sum(pp_est * (mu_est**2 + sigma_est**2)) / ww_temp - mu[-1] ** 2
+            )
             alpha[-1] = ww_temp
         else:
             # add new distribution
@@ -155,7 +155,7 @@ def find_thresholds(distributions, scores, gs_name, counter):
 
 
 def correct_via_kmeans(distributions, thresholds):
-    if distributions["mu"].size <= 2:
+    if distributions["mu"].size <= 2 or thresholds.size != distributions["mu"].size - 1:
         return thresholds
     mu = distributions["mu"]
     sig = distributions["sigma"]

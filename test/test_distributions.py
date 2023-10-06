@@ -179,3 +179,14 @@ def test_correct_via_kmeans_skips_smaller_than_2():
     np.testing.assert_array_equal(thr_found_0, thresholds_0)
     np.testing.assert_array_equal(thr_found_1, thresholds_1)
     np.testing.assert_array_equal(thr_found_2, thresholds_2)
+
+
+def test_correct_via_kmeans_skips_missing_thrs():
+    distributions = {
+        "mu": np.array([0, 1, 2]),
+        "sigma": np.array([1, 1, 1]),
+        "weights": np.array([0.25, 0.25, 0.5]),
+    }
+    thresholds = np.array([0.5])
+    thr_found = dist.correct_via_kmeans(distributions, thresholds)
+    np.testing.assert_array_equal(thr_found, thresholds)
