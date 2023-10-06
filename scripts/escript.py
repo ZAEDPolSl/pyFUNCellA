@@ -30,7 +30,7 @@ def pipeline_for_dist(score, geneset_name, score_name, save_dir):
     time_gmm += t
 
     t0 = time()
-    thresholds_gmm, counter = find_thresholds(distributions, scores, geneset_name)
+    thresholds_gmm, counter = find_thresholds(distributions, scores, geneset_name, 0)
     t = time() - t0
     time_gmm += t
 
@@ -96,32 +96,32 @@ def evaluate_pas(
             distributions,
             counter_score,
         ) = pipeline_for_dist(score, gs_title, score_name, save_dir)
-        del distributions["TIC"], distributions["l_lik"]
+        # del distributions["TIC"], distributions["l_lik"]
         distributions["weights"] = (distributions["weights"]).tolist()
         distributions["mu"] = (distributions["mu"]).tolist()
         distributions["sigma"] = (distributions["sigma"]).tolist()
         counter += counter_score
-        if embed is not None and labels_arr is not None:
-            plot_flow(
-                embed,
-                score,
-                thresholds_kmeans,
-                labels_arr,
-                name=score_name,
-                gs_name=gs_name,
-                embed_name="t-SNE",
-                save_dir=save_dir + "/kmeans/flow/",
-            )
-            plot_flow(
-                embed,
-                score,
-                thresholds_gmm,
-                labels_arr,
-                name=score_name,
-                gs_name=gs_name,
-                embed_name="t-SNE",
-                save_dir=save_dir + "/top1/flow/",
-            )
+        # if embed is not None and labels_arr is not None:
+        #     plot_flow(
+        #         embed,
+        #         score,
+        #         thresholds_kmeans,
+        #         labels_arr,
+        #         name=score_name,
+        #         gs_name=gs_name,
+        #         embed_name="t-SNE",
+        #         save_dir=save_dir + "/kmeans/flow/",
+        #     )
+        #     plot_flow(
+        #         embed,
+        #         score,
+        #         thresholds_gmm,
+        #         labels_arr,
+        #         name=score_name,
+        #         gs_name=gs_name,
+        #         embed_name="t-SNE",
+        #         save_dir=save_dir + "/top1/flow/",
+        #     )
 
         if all(thresholds_gmm.shape):
             scores_thr.loc[gs_name] = thresholds_gmm[-1]

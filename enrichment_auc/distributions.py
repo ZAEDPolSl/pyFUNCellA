@@ -42,7 +42,7 @@ def _merge_gmm(dist, sigma_dev=1.0, alpha_limit=0.001):
     }
 
 
-def find_distribution(scores, gs_name="", sigma_dev=1.0, alpha_limit=0.001):
+def find_distribution(scores, gs_name="", sigma_dev=2.5, alpha_limit=0.001):
     if np.var(scores) == 0:
         print("All scores were of the same value in {}.".format(gs_name))
         return {
@@ -115,7 +115,7 @@ def find_crossing(pdf1, pdf2, mu1, mu2, x_temp):
 
 def _remove_redundant_thresholds(thresholds, scores, counter):
     if thresholds.shape[0] == 0:
-        return thresholds
+        return thresholds, counter
     if len(np.where(scores > thresholds[-1])[0]) <= 1:
         # thresholds = thresholds[:-1]
         # if thresholds.shape[0] == 0:
@@ -141,7 +141,6 @@ def find_thresholds(distributions, scores, gs_name, counter):
             pdfs[i, :],
             pdfs[i + 1, :],
             distributions["mu"][i],
-            distributions["sigma"],
             distributions["mu"][i + 1],
             x_temp,
         )
@@ -159,15 +158,15 @@ def find_thresholds(distributions, scores, gs_name, counter):
 
 
 def correct_via_kmeans(distributions, thresholds):
-    if distributions["mu"].size == 2:
+    if distributions["mu"].size <= 2:
         return thresholds
     mu = distributions["mu"]
     sig = distributions["sigma"]
     alpha = distributions["weights"]
     features = np.stack([mu, sig, alpha]).T
     # scale the features
-    features = features - features.min(axis=0)[:, None]
-    features = features / features.max(axis=0)[:, None]
+    features = features - features.min(axis=0)
+    features = features / features.max(axis=0)
     best_sil = -1.1
     localizer = np.zeros(mu.size)
     for k in range(2, mu.size - 1):
