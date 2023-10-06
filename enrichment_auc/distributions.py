@@ -3,6 +3,7 @@ import numpy_indexed as npi
 from scipy import stats
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
+import sys
 
 from enrichment_auc._matlab_legacy import find_gaussian_mixtures
 
@@ -21,14 +22,10 @@ def _merge_gmm(dist, sigma_dev=1.0, alpha_limit=0.001):
             mu_est = np.array([dist["mu"][i], mu[-1]])
             sigma_est = np.array([dist["sigma"][i], sigma[-1]])
             ww_temp = np.sum(pp_est)
-            mu_temp = (
+            mu[-1] = (
                 dist["weights"][i] * dist["mu"][i] + alpha[-1] * mu[-1]
             ) / ww_temp
-            sigma_temp = np.sqrt(
-                np.sum(pp_est * (mu_est**2 + sigma_est**2)) / ww_temp - mu[-1] ** 2
-            )
-            mu[-1] = mu_temp
-            sigma[-1] = sigma_temp
+            sigma[-1] = np.sqrt(np.sum(pp_est * (mu_est**2 + sigma_est**2)) / ww_temp - mu[-1] ** 2)
             alpha[-1] = ww_temp
         else:
             # add new distribution
