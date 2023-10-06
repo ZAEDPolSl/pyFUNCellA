@@ -4,7 +4,7 @@ import pandas as pd
 import scipy.stats as stats
 import seaborn as sns
 
-from enrichment_auc.distributions import categorize_by_thresholds
+from enrichment_auc.thresholds import categorize_by_thresholds
 
 from .legend_handler import move_legend
 

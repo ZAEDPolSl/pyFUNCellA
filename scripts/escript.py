@@ -1,19 +1,16 @@
 import json
 import os
 import sys
+from time import time
 
 import numpy as np
 import pandas as pd
-from time import time
 from tqdm import tqdm
 
-from enrichment_auc.distributions import (
-    find_distribution,
-    find_thresholds,
-    correct_via_kmeans,
-)
+from enrichment_auc.distributions import find_distribution
 from enrichment_auc.plot.plot_distributed_data import plot_mixtures
 from enrichment_auc.plot.plot_scatter_flow import plot_flow
+from enrichment_auc.thresholds import correct_via_kmeans, find_thresholds
 
 time_kmeans = 0
 time_gmm = 0
