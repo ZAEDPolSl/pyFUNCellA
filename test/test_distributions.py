@@ -1,6 +1,6 @@
 import numpy as np
 
-import enrichment_auc.distributions as dist
+import enrichment_auc.gmm.distributions as dist
 
 
 def test_find_dist_zero_var():
@@ -9,8 +9,6 @@ def test_find_dist_zero_var():
     assert dist_found["weights"].shape[0] == 0
     assert dist_found["mu"].shape[0] == 0
     assert dist_found["sigma"].shape[0] == 0
-    assert np.isnan(dist_found["TIC"])
-    assert np.isnan(dist_found["l_lik"])
 
 
 def test_merge_gmm_retains_dists():

@@ -7,10 +7,10 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from enrichment_auc.distributions import find_distribution
+from enrichment_auc.gmm.distributions import find_distribution
+from enrichment_auc.gmm.thresholds import correct_via_kmeans, find_thresholds
 from enrichment_auc.plot.plot_distributed_data import plot_mixtures
 from enrichment_auc.plot.plot_scatter_flow import plot_flow
-from enrichment_auc.thresholds import correct_via_kmeans, find_thresholds
 
 time_kmeans = 0
 time_gmm = 0
@@ -93,7 +93,6 @@ def evaluate_pas(
             distributions,
             counter_score,
         ) = pipeline_for_dist(score, gs_title, score_name, save_dir)
-        # del distributions["TIC"], distributions["l_lik"]
         distributions["weights"] = (distributions["weights"]).tolist()
         distributions["mu"] = (distributions["mu"]).tolist()
         distributions["sigma"] = (distributions["sigma"]).tolist()

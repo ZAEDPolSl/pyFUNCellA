@@ -3,7 +3,7 @@ import plotly.express as px
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 
-from enrichment_auc.thresholds import categorize_by_thresholds
+from enrichment_auc.gmm.thresholds import categorize_by_thresholds
 
 
 def clean_up_layout(fig, gs_name, labels_len, embed_name):

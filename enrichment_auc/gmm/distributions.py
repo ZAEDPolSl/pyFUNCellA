@@ -1,7 +1,8 @@
 import numpy as np
 from scipy import stats
 
-from enrichment_auc._matlab_legacy import find_gaussian_mixtures
+# from enrichment_auc._matlab_legacy import find_gaussian_mixtures
+from enrichment_auc.gmm.gaussian_mixture_hist import gaussian_mixture_hist
 
 
 def _merge_gmm(dist, sigma_dev=1.0, alpha_limit=0.001):
@@ -42,37 +43,30 @@ def find_distribution(scores, gs_name="", sigma_dev=2.5, alpha_limit=0.001):
             "weights": np.array([]),
             "mu": np.array([]),
             "sigma": np.array([]),
-            "TIC": np.nan,
-            "l_lik": np.nan,
         }
     # find proper Gaussian Mixture model approximating the scores' distribution
     counts = np.ones(scores.shape)
+    scores = np.sort(scores)
     if stats.shapiro(scores).pvalue > 0.05:  # check if distribution is normal
-        cur_dist = find_gaussian_mixtures(scores, counts, 1)
+        pp, mu, sig = gaussian_mixture_hist(
+            scores,
+            counts,
+            SW=None,
+            n_clusters=1,
+        )
     else:  # if not, approximate with Gaussian Mixture model
-        min_BIC = np.Inf
-        cur_dist = {}
-        for components_no in range(1, 11):
-            distribution = find_gaussian_mixtures(scores, counts, components_no)
-            l_lik = distribution["l_lik"]
-            BIC = -2 * l_lik + (3 * components_no - 1) * np.log(scores.size)
-
-            if (
-                min_BIC > BIC
-                and not np.isnan(BIC)
-                and not np.isnan(distribution["TIC"])
-            ):
-                cur_dist = distribution
-                min_BIC = BIC
-
-        if min_BIC == np.inf:
-            cur_dist = {
-                "weights": np.array([]),
-                "mu": np.array([]),
-                "sigma": np.array([]),
-                "TIC": np.nan,
-                "l_lik": np.nan,
-            }
+        pp, mu, sig = gaussian_mixture_hist(
+            scores,
+            counts,
+            KS=10,
+            SW=None,
+            n_clusters=None,
+        )
+    cur_dist = {
+        "weights": pp,
+        "mu": mu,
+        "sigma": sig,
+    }
     # merge the special cases
     dist = _merge_gmm(cur_dist, sigma_dev, alpha_limit)
     return dist

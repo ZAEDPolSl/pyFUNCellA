@@ -1,6 +1,6 @@
 import numpy as np
 
-import enrichment_auc.thresholds as thr_tools
+import enrichment_auc.gmm.thresholds as thr_tools
 
 
 def test_categorize_by_thresholds_no_thr():

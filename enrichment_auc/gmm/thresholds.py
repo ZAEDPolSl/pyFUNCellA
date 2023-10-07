@@ -61,6 +61,71 @@ def _remove_redundant_thresholds(thresholds, scores, counter):
     return thresholds, counter
 
 
+def _find_thr_by_params(distributions, scores, pdfs, sigma_dev=2.5):
+    tol = 1e-10
+    thresholds = []
+    for i in range(distributions["mu"].size - 1):
+        A = 1 / (2 * distributions["sigma"][i] ** 2) - 1 / (
+            2 * distributions["sigma"][i + 1] ** 2
+        )
+        B = distributions["mu"][i + 1] / (
+            distributions["sigma"][i + 1] ** 2
+        ) - distributions["mu"][i] / (distributions["sigma"][i] ** 2)
+        C = (
+            distributions["mu"][i] ** 2 / (2 * distributions["sigma"][i] ** 2)
+            - distributions["mu"][i + 1] ** 2 / (2 * distributions["sigma"][i + 1] ** 2)
+            - np.log(
+                (distributions["weights"][i] * distributions["sigma"][i + 1])
+                / (distributions["weights"][i + 1] * distributions["sigma"][i])
+            )
+        )
+        if np.abs(A) < tol:
+            if np.abs(B) < tol:
+                print("the Gaussians are the same.")
+            else:
+                x1 = -C / B
+                thresholds.append(x1)
+        else:
+            delta = B**2 - 4 * A * C
+            if delta < 0:
+                found = _find_thr_by_dist(distributions, scores, pdfs)[i]
+                thresholds.append(found)
+                pass
+            else:
+                x1 = (-B - np.sqrt(delta)) / (2 * A)
+                x2 = (-B + np.sqrt(delta)) / (2 * A)
+                if x1 > distributions["mu"][i] and x1 < distributions["mu"][i + 1]:
+                    thresholds.append(x1)
+                elif x2 > distributions["mu"][i] and x2 < distributions["mu"][i + 1]:
+                    thresholds.append(x2)
+                else:
+                    d1 = np.min(
+                        np.array(
+                            [
+                                np.abs(x1 - distributions["mu"][i]),
+                                np.abs(x1 - distributions["mu"][i + 1]),
+                            ]
+                        )
+                    )
+                    d2 = np.min(
+                        np.array(
+                            [
+                                np.abs(x2 - distributions["mu"][i]),
+                                np.abs(x2 - distributions["mu"][i + 1]),
+                            ]
+                        )
+                    )
+                    if d1 < d2:
+                        thresholds.append(x1)
+                    else:
+                        thresholds.append(x2)
+    return np.array(thresholds)
+
+
+def _find_thr_by_dist(distributions, scores, pdfs, sigma_dev=2.5):
+    return 0
+
+
 def find_pdfs(mu, sig, alpha, x_temp):
     x_temp = x_temp.reshape(
         x_temp.shape[0], -1
@@ -110,10 +175,28 @@ def find_thresholds(distributions, scores, gs_name, counter):
             thresholds.append(thr)
     if len(thresholds) != distributions["mu"].size - 1:
         print(
-            "{}: {} thresholds fonud for {} distributions.".format(
+            "{}: {} thresholds found for {} distributions.".format(
                 gs_name, len(thresholds), distributions["mu"].size
             )
         )
     thresholds = np.array(thresholds)
     thresholds, counter = _remove_redundant_thresholds(thresholds, scores, counter)
     return thresholds, counter
+
+
+def new_find_thresholds(distributions, scores, gs_name, counter):
+    if distributions["mu"].size == 0:
+        return np.array([])
+    x_temp = np.linspace(np.min(scores), np.max(scores), 10**6)
+    pdfs = find_pdfs(
+        distributions["mu"], distributions["sigma"], distributions["weights"], x_temp
+    )
+    thresholds = _find_thr_by_params(distributions, scores, pdfs)
+    if thresholds.size != distributions["mu"].size - 1:
+        print(
+            "{}: {} thresholds fonud for {} distributions.".format(
+                gs_name, thresholds.size, distributions["mu"].size
+            )
+        )
+    thresholds, counter = _remove_redundant_thresholds(thresholds, scores, counter)
+    return thresholds
