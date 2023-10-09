@@ -61,9 +61,10 @@ def _remove_redundant_thresholds(thresholds, scores, counter):
     return thresholds, counter
 
 
-def _find_thr_by_params(distributions, scores, pdfs, sigma_dev=2.5):
+def _find_thr_by_params(distributions, x_temp, pdfs, sigma_dev=2.5):
     tol = 1e-10
     thresholds = []
+    thrs_from_dists = np.array([])
     for i in range(distributions["mu"].size - 1):
         A = 1 / (2 * distributions["sigma"][i] ** 2) - 1 / (
             2 * distributions["sigma"][i + 1] ** 2
@@ -88,8 +89,12 @@ def _find_thr_by_params(distributions, scores, pdfs, sigma_dev=2.5):
         else:
             delta = B**2 - 4 * A * C
             if delta < 0:
-                found = _find_thr_by_dist(distributions, scores, pdfs)[i]
-                thresholds.append(found)
+                if thrs_from_dists.size == 0:
+                    thrs_from_dists = _find_thr_by_dist(
+                        distributions, x_temp, pdfs, sigma_dev
+                    )
+                if np.isfinite(thrs_from_dists[i]):
+                    thresholds.append(thrs_from_dists[i])
                 pass
             else:
                 x1 = (-B - np.sqrt(delta)) / (2 * A)
@@ -122,8 +127,45 @@ def _find_thr_by_params(distributions, scores, pdfs, sigma_dev=2.5):
     return np.array(thresholds)
 
 
-def _find_thr_by_dist(distributions, scores, pdfs, sigma_dev=2.5):
-    return 0
+def _find_thr_by_dist(distributions, x_temp, pdfs, sigma_dev=2.5):
+    ranges = np.array(
+        [
+            distributions["mu"][0] - sigma_dev * distributions["sigma"][0],
+            distributions["mu"][-1] + sigma_dev * distributions["sigma"][-1],
+        ]
+    )
+    x_temp, pdfs = _restrict_thr_ranges(ranges, x_temp, pdfs)
+    # sum of all consecutive pdfs except for last one, summing from first
+    f1 = np.cumsum(pdfs, axis=0)[:-1, :]
+    # sum of all consecutive pdfs except for first one, but summing from last
+    f2 = np.cumsum(pdfs[::-1, :], axis=0)[::-1, :][1:, :]
+    to_discard = _detect_noncrossing(f1, f2)
+    thrs = _find_closest_location(f1, f2, x_temp)
+    thrs[to_discard] = np.nan
+    return thrs
+
+
+def _find_closest_location(f1, f2, x_temp):
+    f_diff = np.abs(f1 - f2)
+    idx = np.argmin(f_diff, axis=1)
+    # x_temp from argmin
+    thrs = x_temp[idx]
+    return thrs
+
+
+def _detect_noncrossing(f1, f2):
+    checks = np.sum(f2 > f1, axis=1)
+    idxs = np.where((checks == 0) | (checks == f1.shape[1]))
+    return idxs
+
+
+def _restrict_thr_ranges(ranges, x_temp, pdfs):
+    to_keep = np.where((x_temp > ranges[0]) & (x_temp < ranges[1]))
+    x_temp = x_temp[to_keep]
+    x_temp = x_temp[1:-1]
+    pdfs = pdfs[:, to_keep].squeeze()
+    pdfs = pdfs[:, 1:-1]
+    return x_temp, pdfs
 
 
 def find_pdfs(mu, sig, alpha, x_temp):
@@ -137,61 +179,14 @@ def find_pdfs(mu, sig, alpha, x_temp):
     return pdfs
 
 
-def find_crossing(pdf1, pdf2, mu1, mu2, x_temp):
-    # find crossing between two given pdfs
-    idxs = np.argwhere(np.diff(np.sign(pdf1 - pdf2))).flatten()
-    if idxs.size == 0:
-        return None
-    thrs = x_temp[idxs]
-    if thrs[-1] > mu1 and thrs[-1] < mu2:
-        return thrs[-1]
-    if thrs[0] > mu1 and thrs[0] < mu2:
-        return thrs[0]
-    # do the closest to means' mean
-    means = np.mean(np.array([mu1, mu2]))
-    if np.abs(thrs[-1] - means) < np.abs(thrs[0] - means):
-        return thrs[-1]
-    return thrs[0]
-
-
 def find_thresholds(distributions, scores, gs_name, counter):
-    # for one distribution only
-    if distributions["mu"].size == 0:
-        return np.array([])
-    thresholds = []
-    x_temp = np.linspace(np.min(scores), np.max(scores), 10**6)
-    pdfs = find_pdfs(
-        distributions["mu"], distributions["sigma"], distributions["weights"], x_temp
-    )
-    for i in range(distributions["mu"].size - 1):
-        thr = find_crossing(
-            pdfs[i, :],
-            pdfs[i + 1, :],
-            distributions["mu"][i],
-            distributions["mu"][i + 1],
-            x_temp,
-        )
-        if thr is not None:
-            thresholds.append(thr)
-    if len(thresholds) != distributions["mu"].size - 1:
-        print(
-            "{}: {} thresholds found for {} distributions.".format(
-                gs_name, len(thresholds), distributions["mu"].size
-            )
-        )
-    thresholds = np.array(thresholds)
-    thresholds, counter = _remove_redundant_thresholds(thresholds, scores, counter)
-    return thresholds, counter
-
-
-def new_find_thresholds(distributions, scores, gs_name, counter):
     if distributions["mu"].size == 0:
         return np.array([])
     x_temp = np.linspace(np.min(scores), np.max(scores), 10**6)
     pdfs = find_pdfs(
         distributions["mu"], distributions["sigma"], distributions["weights"], x_temp
     )
-    thresholds = _find_thr_by_params(distributions, scores, pdfs)
+    thresholds = _find_thr_by_params(distributions, x_temp, pdfs)
     if thresholds.size != distributions["mu"].size - 1:
         print(
             "{}: {} thresholds fonud for {} distributions.".format(

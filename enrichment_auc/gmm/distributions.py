@@ -36,7 +36,7 @@ def _merge_gmm(dist, sigma_dev=1.0, alpha_limit=0.001):
     }
 
 
-def find_distribution(scores, gs_name="", sigma_dev=2.5, alpha_limit=0.001):
+def find_distribution(scores, gs_name="", sigma_dev=2.5, alpha_limit=0.001, SW=0.25):
     if np.var(scores) == 0:
         print("All scores were of the same value in {}.".format(gs_name))
         return {
@@ -51,7 +51,7 @@ def find_distribution(scores, gs_name="", sigma_dev=2.5, alpha_limit=0.001):
         pp, mu, sig = gaussian_mixture_hist(
             scores,
             counts,
-            SW=None,
+            SW=SW,
             n_clusters=1,
         )
     else:  # if not, approximate with Gaussian Mixture model
@@ -59,7 +59,7 @@ def find_distribution(scores, gs_name="", sigma_dev=2.5, alpha_limit=0.001):
             scores,
             counts,
             KS=10,
-            SW=None,
+            SW=SW,
             n_clusters=None,
         )
     cur_dist = {
