@@ -24,7 +24,7 @@ def gaussian_mixture_hist(
     cores=0,
     criterion="bic",
     path_visualisation_name=None,
-    SW=None,
+    SW=0.25,
     stopping_threshold=0.2,
     min_clusters=5,
     n_clusters=None,
@@ -148,7 +148,7 @@ def gaussian_mixture_hist(
     return pp_est, mu_est, sig_est
 
 
-def EM_iter_hist(x, y, alpha, mu, sig, TIC, SW=1200):
+def EM_iter_hist(x, y, alpha, mu, sig, TIC, SW=0.25):
     [x, ind] = sort(x)
     y = y[ind]
     N = len(y)
@@ -157,9 +157,8 @@ def EM_iter_hist(x, y, alpha, mu, sig, TIC, SW=1200):
     count = 1
     KS = np.max(alpha.shape)
     # TODO: more emphasis on SW in documentation - add warning to look at the histogram before procceding
-    if SW is None:
-        SW = np.power((max(x) - min(x)) / (3 * KS), 2)
-        # SW = stats.iqr(x) / (10 * KS)
+    SW = np.power((max(x) - min(x)) / (4 * KS), 2)
+    min_sigdev = np.power((max(x) - min(x)) * SW / KS, 2)
     eps_change = 1e-4
 
     while change > eps_change and count < 10000:
@@ -184,8 +183,8 @@ def EM_iter_hist(x, y, alpha, mu, sig, TIC, SW=1200):
             sig2num = np.sum(np.matmul(pk, ((x - mu[a]) ** 2)))
 
             # sig
-            if sig2num / denom < SW:
-                sig2[a] = SW
+            if sig2num / denom < min_sigdev:
+                sig2[a] = min_sigdev
             else:
                 sig2[a] = sig2num / denom
 
