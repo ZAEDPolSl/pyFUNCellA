@@ -21,21 +21,21 @@ def correct_via_kmeans(distributions, thresholds):
     features = np.stack([mu, sig, alpha]).T
     # scale the features
     features = features - features.min(axis=0)
-    features = features / features.max(axis=0)
+    features = np.divide(
+        features,
+        features.max(axis=0),
+        out=np.zeros_like(features),
+        where=features.max(axis=0) != 0,
+    )
     best_sil = -1.1
     localizer = np.zeros(mu.size)
-    try:
-        for k in range(2, mu.size - 1):
-            km = KMeans(k, n_init="auto")
-            labels = km.fit_predict(features)
-            sil = silhouette_score(features, labels)
-            if sil > best_sil:
-                best_sil = sil
-                localizer = labels
-    except ValueError as e:
-        print(e)
-        print(distributions)
-        print(thresholds)
+    for k in range(2, mu.size - 1):
+        km = KMeans(k, n_init="auto")
+        labels = km.fit_predict(features)
+        sil = silhouette_score(features, labels)
+        if sil > best_sil:
+            best_sil = sil
+            localizer = labels
     thresholds = _filter_thresholds(localizer, mu, thresholds)
     return thresholds
 

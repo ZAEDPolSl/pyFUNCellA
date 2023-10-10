@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import pytest
 
 import enrichment_auc.gmm.thresholds as thr_tools
 
@@ -49,6 +50,21 @@ def test_correct_via_kmeans_skips_missing_thrs():
     thresholds = np.array([0.5])
     thr_found = thr_tools.correct_via_kmeans(distributions, thresholds)
     np.testing.assert_array_equal(thr_found, thresholds)
+
+
+def test_correct_via_kmeans_scales_correctly():
+    distributions = {
+        "mu": np.array(
+            [0.25, 0.5, 0.75],
+        ),
+        "sigma": np.array([0.1, 0.1, 0.1]),
+        "weights": np.array([1.0 / 3, 1.0 / 3, 1.0 / 3]),
+    }
+    thresholds = np.array([0.4, 0.6])
+    try:
+        _ = thr_tools.correct_via_kmeans(distributions, thresholds)
+    except ValueError:
+        pytest.fail("unexpected ValueError")
 
 
 # def remove_redundant_thresholds_start():
