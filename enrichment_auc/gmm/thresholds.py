@@ -24,13 +24,18 @@ def correct_via_kmeans(distributions, thresholds):
     features = features / features.max(axis=0)
     best_sil = -1.1
     localizer = np.zeros(mu.size)
-    for k in range(2, mu.size - 1):
-        km = KMeans(k, n_init="auto")
-        labels = km.fit_predict(features)
-        sil = silhouette_score(features, labels)
-        if sil > best_sil:
-            best_sil = sil
-            localizer = labels
+    try:
+        for k in range(2, mu.size - 1):
+            km = KMeans(k, n_init="auto")
+            labels = km.fit_predict(features)
+            sil = silhouette_score(features, labels)
+            if sil > best_sil:
+                best_sil = sil
+                localizer = labels
+    except ValueError as e:
+        print(e)
+        print(distributions)
+        print(thresholds)
     thresholds = _filter_thresholds(localizer, mu, thresholds)
     return thresholds
 
@@ -189,7 +194,7 @@ def find_thresholds(distributions, scores, gs_name, counter):
     thresholds = _find_thr_by_params(distributions, x_temp, pdfs)
     if thresholds.size != distributions["mu"].size - 1:
         print(
-            "{}: {} thresholds fonud for {} distributions.".format(
+            "{}: {} thresholds found for {} distributions.".format(
                 gs_name, thresholds.size, distributions["mu"].size
             )
         )
