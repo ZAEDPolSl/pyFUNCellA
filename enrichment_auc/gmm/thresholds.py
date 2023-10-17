@@ -52,20 +52,6 @@ def _filter_thresholds(localizer, mu, thresholds):
     return thresholds
 
 
-def _remove_redundant_thresholds(thresholds, scores, counter):
-    if thresholds.shape[0] == 0:
-        return thresholds, counter
-    if len(np.where(scores > thresholds[-1])[0]) <= 1:
-        # thresholds = thresholds[:-1]
-        # if thresholds.shape[0] == 0:
-        #     return thresholds
-        counter += 1
-    if len(np.where(scores <= thresholds[0])[0]) <= 1:
-        # thresholds = thresholds[1:]
-        counter += 1
-    return thresholds, counter
-
-
 def _find_thr_by_params(distributions, x_temp, pdfs, sigma_dev=2.5):
     tol = 1e-10
     thresholds = []
@@ -184,7 +170,7 @@ def find_pdfs(mu, sig, alpha, x_temp):
     return pdfs
 
 
-def find_thresholds(distributions, scores, gs_name, counter):
+def find_thresholds(distributions, scores, gs_name):
     if distributions["mu"].size == 0:
         return np.array([])
     x_temp = np.linspace(np.min(scores), np.max(scores), 10**6)
@@ -198,5 +184,4 @@ def find_thresholds(distributions, scores, gs_name, counter):
                 gs_name, thresholds.size, distributions["mu"].size
             )
         )
-    thresholds, counter = _remove_redundant_thresholds(thresholds, scores, counter)
     return thresholds

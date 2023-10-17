@@ -67,49 +67,6 @@ def test_correct_via_kmeans_scales_correctly():
         pytest.fail("unexpected ValueError")
 
 
-# def remove_redundant_thresholds_start():
-#     scores = np.linspace(0, 1, 100)
-#     thresholds = np.array([0])
-#     thr_found = thr_tools._remove_redundant_thresholds(thresholds, scores)
-#     assert thr_found.shape[0] == 0
-
-
-# def remove_redundant_thresholds_before():
-#     scores = np.linspace(0, 1, 100)
-#     thresholds = np.array([-0.01])
-#     thr_found = thr_tools._remove_redundant_thresholds(thresholds, scores)
-#     assert thr_found.shape[0] == 0
-
-
-# def remove_redundant_thresholds_end():
-#     scores = np.linspace(0, 1, 100)
-#     thresholds = np.array([1])
-#     thr_found = thr_tools._remove_redundant_thresholds(thresholds, scores)
-#     assert thr_found.shape[0] == 0
-
-
-# def remove_redundant_thresholds_after():
-#     scores = np.linspace(0, 1, 100)
-#     thresholds = np.array([1.01])
-#     thr_found = thr_tools._remove_redundant_thresholds(thresholds, scores)
-#     assert thr_found.shape[0] == 0
-
-
-# def remove_redundant_thresholds_mixed_ends():
-#     scores = np.linspace(0, 1, 100)
-#     thresholds = np.array([0, 1.0])
-#     thr_found = thr_tools._remove_redundant_thresholds(thresholds, scores)
-#     assert thr_found.shape[0] == 0
-
-
-# def remove_redundant_thresholds_mix():
-#     scores = np.linspace(0, 1, 100)
-#     thresholds = np.array([0, 0.5, 0.75, 1.0])
-#     thr_found = thr_tools._remove_redundant_thresholds(thresholds, scores)
-#     thr_expected = np.array([0.5, 0.75])
-#     np.testing.assert_array_equal(thr_found, thr_expected)
-
-
 def test_filter_thresholds_retains_thresholds():
     localizer = np.array([0, 1, 2])
     mu = np.array([0, 1, 2])
