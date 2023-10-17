@@ -201,5 +201,5 @@ def test_find_thresholds():
         "weights": np.array([0.03698616, 0.38945294, 0.46400648, 0.10955443]),
     }
     thr_expected = np.array([-19.9026174, -10.785832, 0.5642248])
-    thr_found = thr_tools.find_thresholds(distributions, scores, "", 0)
+    thr_found = thr_tools.find_thresholds(distributions, scores, "")
     np.testing.assert_array_almost_equal(thr_found, thr_expected, decimal=2)
