@@ -52,15 +52,16 @@ def find_distribution(scores, gs_name="", sigma_dev=2.5, alpha_limit=0.001):
             "TIC": np.nan,
             "l_lik": np.nan,
         }
+    offset = np.min(scores)
     # find proper Gaussian Mixture model approximating the scores' distribution
     counts = np.ones(scores.shape)
     if stats.shapiro(scores).pvalue > 0.05:  # check if distribution is normal
-        cur_dist = find_gaussian_mixtures(scores, counts, 1)
+        cur_dist = find_gaussian_mixtures(scores - offset, counts, 1)
     else:  # if not, approximate with Gaussian Mixture model
         min_BIC = np.Inf
         cur_dist = {}
         for components_no in range(1, 11):
-            distribution = find_gaussian_mixtures(scores, counts, components_no)
+            distribution = find_gaussian_mixtures(scores - offset, counts, components_no)
             l_lik = distribution["l_lik"]
             BIC = -2 * l_lik + (3 * components_no - 1) * np.log(scores.size)
 
@@ -82,6 +83,7 @@ def find_distribution(scores, gs_name="", sigma_dev=2.5, alpha_limit=0.001):
             }
     # merge the special cases
     dist = _merge_gmm(cur_dist, sigma_dev, alpha_limit)
+    cur_dist["mu"] = cur_dist["mu"] + offset
     return dist
 
 
