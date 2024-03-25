@@ -35,6 +35,7 @@ def pipeline_for_dist(score, geneset_name, score_name, save_dir):
     time_gmm += t
 
     t0 = time()
+    print(distributions)
     thresholds_kmeans = correct_via_kmeans(distributions, thresholds_gmm)
     t = time() - t0
     time_kmeans += t
@@ -159,18 +160,19 @@ def evaluate_pas(
 
 
 score_names = [
-    "z",
-    "gsva",
-    "auc",
-    "cerno",
-    "ratios",
-    "vision",
-    "aucell",
-    "svd",
-    "sparse_pca",
-    "ssgsea",
-    "jasmine",
-    "mean",
+    # "z",
+    # "gsva",
+    # "auc",
+    # "cerno",
+    # "ratios",
+    # "vision",
+    # "aucell",
+    # "svd",
+    # "sparse_pca",
+    # "ssgsea",
+    # "jasmine",
+    # "mean",
+    "vae"
 ]  # all scores to run for each data type
 
 if __name__ == "__main__":
