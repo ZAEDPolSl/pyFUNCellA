@@ -1,17 +1,14 @@
 import json
 import os
 import sys
+from time import time
 
 import numpy as np
 import pandas as pd
-from time import time
 from tqdm import tqdm
 
-from enrichment_auc.distributions import (
-    find_distribution,
-    find_thresholds,
-    correct_via_kmeans,
-)
+from enrichment_auc.gmm.distributions import find_distribution
+from enrichment_auc.gmm.thresholds import correct_via_kmeans, find_thresholds
 from enrichment_auc.plot.plot_distributed_data import plot_mixtures
 from enrichment_auc.plot.plot_scatter_flow import plot_flow
 
@@ -30,7 +27,7 @@ def pipeline_for_dist(score, geneset_name, score_name, save_dir):
     time_gmm += t
 
     t0 = time()
-    thresholds_gmm, counter = find_thresholds(distributions, scores, geneset_name, 0)
+    thresholds_gmm = find_thresholds(distributions, scores, geneset_name)
     t = time() - t0
     time_gmm += t
 
@@ -67,7 +64,7 @@ def pipeline_for_dist(score, geneset_name, score_name, save_dir):
             save_dir=save_dir + "/kmeans",
             file_only=True,
         )
-    return (thresholds_gmm, thresholds_kmeans, distributions, counter)
+    return (thresholds_gmm, thresholds_kmeans, distributions)
 
 
 def evaluate_pas(
@@ -86,7 +83,6 @@ def evaluate_pas(
     scores_dist = []
     gmm_thrs = {}
     kmeans_thrs = {}
-    counter = 0
 
     for i, gs_name in tqdm(enumerate(gs_names), total=len(gs_names)):
         gs_title = geneset_info.Title.where(geneset_info.ID == gs_name, gs_name).max()
@@ -95,13 +91,10 @@ def evaluate_pas(
             thresholds_gmm,
             thresholds_kmeans,
             distributions,
-            counter_score,
         ) = pipeline_for_dist(score, gs_title, score_name, save_dir)
-        # del distributions["TIC"], distributions["l_lik"]
         distributions["weights"] = (distributions["weights"]).tolist()
         distributions["mu"] = (distributions["mu"]).tolist()
         distributions["sigma"] = (distributions["sigma"]).tolist()
-        counter += counter_score
         # if embed is not None and labels_arr is not None:
         #     plot_flow(
         #         embed,
@@ -155,8 +148,6 @@ def evaluate_pas(
         "w",
     ) as fout:
         json.dump(kmeans_thrs, fout)
-    print("for smoothing:")
-    print(counter)
 
 
 score_names = [

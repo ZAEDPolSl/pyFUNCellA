@@ -3,7 +3,7 @@ import plotly.express as px
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 
-from enrichment_auc.distributions import categorize_by_thresholds
+from enrichment_auc.gmm.thresholds import categorize_by_thresholds
 
 
 def clean_up_layout(fig, gs_name, labels_len, embed_name):
@@ -13,17 +13,15 @@ def clean_up_layout(fig, gs_name, labels_len, embed_name):
         template="plotly_white",
         title_text="Visualizations for {}".format(gs_name),
         legend_tracegroupgap=600 - (labels_len + 1) * 10,
-        legend=dict(yanchor="top", y=1.0)
+        legend=dict(yanchor="top", y=1.0),
     )
     x_range = fig.full_figure_for_development(warn=False).layout.xaxis.range
     y_range = fig.full_figure_for_development(warn=False).layout.yaxis.range
     for i in range(1, 4):
-        fig.update_yaxes(title_text="{} 2".format(embed_name),
-                         range=y_range,
-                         row=i, col=1)
-    fig.update_xaxes(title_text="{} 1".format(embed_name),
-                     range=x_range,
-                     row=3, col=1)
+        fig.update_yaxes(
+            title_text="{} 2".format(embed_name), range=y_range, row=i, col=1
+        )
+    fig.update_xaxes(title_text="{} 1".format(embed_name), range=x_range, row=3, col=1)
     return fig
 
 
@@ -46,7 +44,7 @@ def prepare_subplot(fig, embed, labels, subplot_name, row):
             row=row,
             col=1,
         )
-    
+
     fig.update_layout(legend=dict(groupclick="toggleitem"))
     return fig
 
@@ -57,7 +55,7 @@ def plot_flow(
     fig = make_subplots(
         rows=3, cols=1, shared_xaxes=True, shared_yaxes=True, vertical_spacing=0.02
     )
-    
+
     fig = prepare_subplot(fig, embed, labels, "Original", 1)
 
     fig.add_trace(
@@ -68,9 +66,7 @@ def plot_flow(
             legendgroup="flow",
             name=name,
             marker=dict(
-                color=pas,
-                colorbar=dict(title=name, len=0.25),
-                colorscale="teal"
+                color=pas, colorbar=dict(title=name, len=0.25), colorscale="teal"
             ),
             mode="markers",
         ),
