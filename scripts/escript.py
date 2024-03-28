@@ -27,12 +27,11 @@ def pipeline_for_dist(score, geneset_name, score_name, save_dir):
     time_gmm += t
 
     t0 = time()
-    thresholds_gmm = find_thresholds(distributions, scores, geneset_name)
+    thresholds_gmm = find_thresholds(distributions, score, geneset_name)
     t = time() - t0
     time_gmm += t
 
     t0 = time()
-    print(distributions)
     thresholds_kmeans = correct_via_kmeans(distributions, thresholds_gmm)
     t = time() - t0
     time_kmeans += t
