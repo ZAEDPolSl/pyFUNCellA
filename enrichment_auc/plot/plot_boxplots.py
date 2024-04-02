@@ -19,7 +19,7 @@ plot_scorenames = {
     "SparsePCA abs": "sparse_pca_abs",
     "GSVA": "gsva",
     "ssGSEA": "ssgsea",
-    # "VAE": "vae",
+    "VAE": "vae",
 }
 
 palette = {
@@ -38,7 +38,7 @@ palette = {
     "SparsePCA abs": "rgba(188,122,143,0.71)",
     "GSVA": "#228B22",
     "ssGSEA": "#006400",
-    # "VAE": "#000000"
+    "VAE": "#000000"
 }
 
 
