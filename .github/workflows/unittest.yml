@@ -30,7 +30,6 @@ jobs:
         cache: 'poetry'
     - name: Install dependencies
       run: |
-        poetry config virtualenvs.create false
         poetry install --with dev
         poetry build
     - name: Running the tests with pytest
