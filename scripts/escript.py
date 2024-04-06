@@ -36,7 +36,7 @@ def pipeline_for_dist(score, geneset_name, score_name, save_dir):
     t = time() - t0
     time_kmeans += t
 
-    if np.var(score) != 0:
+    if score.max() - score.min() > 10**(-20):
         thr_gmm = score.max()
         thr_kmeans = score.max()
         if thresholds_gmm.shape[0] != 0:
