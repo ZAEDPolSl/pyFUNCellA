@@ -5,9 +5,9 @@ import pandas as pd
 
 from enrichment_auc.plot.plot_boxplots import visualize_difference, visualize_methods
 
-datafolder = "data/"
-resfolder = "results/"
-plotfolder = "plots/"
+datafolder = "/mnt/pmanas/Ania/scrna-seq/data/"
+resfolder = "/mnt/pmanas/Ania/scrna-seq/results/"
+plotfolder = "/mnt/pmanas/Ania/scrna-seq/plots/"
 
 tissues = ["PBMC", "COVID", "BM", "Liver"]
 norm = "seurat"
@@ -66,7 +66,8 @@ for tissue in tissues:
             names,
             plot_folder,
             x,
-            y)
+            y,
+        )
 
 print("merged")
 # do violin plots of each thr method per whole

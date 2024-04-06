@@ -22,7 +22,7 @@ scorenames = [
     "sparse_pca_abs",
     "gsva",
     "ssgsea",
-    # "vae",
+    "vae",
 ]
 
 names = [
@@ -48,16 +48,18 @@ if __name__ == "__main__":
     plottype = clustertype
     if clustertype == "gmm":
         plottype = "top1"
-        
-    if not os.path.isdir(resfolder+"confusion_matrix_"+plottype):
-        os.makedirs(resfolder+"confusion_matrix_"+plottype)
+
+    if not os.path.isdir(resfolder + "confusion_matrix_" + plottype):
+        os.makedirs(resfolder + "confusion_matrix_" + plottype)
 
     paths = pd.read_csv(datafolder + "chosen_paths.txt", sep="\t", index_col=0)
     geneset_info = pd.read_csv(
         datafolder + tissue + "/filtered_genesets_modules.csv", index_col=0
     )
     dataset_specific = paths[paths["ID"].isin(geneset_info["ID"])]
-    dataset_specific.Celltype = dataset_specific["Celltype"].str.replace(";", " +")
+    dataset_specific.loc[:, "Celltype"] = dataset_specific["Celltype"].str.replace(
+        ";", " +"
+    )
     to_save = dataset_specific[["ID", "Title", "Celltype"]]
 
     true_labels = pd.read_csv(datafolder + tissue + "/true_labels.csv", index_col=0)
@@ -77,7 +79,7 @@ if __name__ == "__main__":
         ~true_labels["CellType"].isin(["NK cell", "T cell", "B cell"]), "CellType"
     ] = "other"
 
-    to_save = to_save[
+    to_save_ = to_save[
         to_save.Celltype.str.contains("|".join(true_labels.CellType.unique()))
     ]
 
@@ -89,10 +91,11 @@ if __name__ == "__main__":
             scores = pd.read_csv(resfolder + scorename + ".csv", index_col=0)
         scores = scores.loc[:, not_pre_B]
         thresholds = pd.read_csv(
-            resfolder + "/" + clustertype + "_thr/" + scorename + "_thr.csv", index_col=0
+            resfolder + "/" + clustertype + "_thr/" + scorename + "_thr.csv",
+            index_col=0,
         )
         eval = Scores()
-        for index, row in to_save.iterrows():
+        for index, row in to_save_.iterrows():
             gs_score = scores.loc[row["ID"]]
             thr = thresholds.loc[row["ID"]].max()
             preds = gs_score > thr
@@ -105,6 +108,6 @@ if __name__ == "__main__":
                 true_labels["label"], preds, resfolder, plottype, scorename, row["ID"]
             )
         for i, cls_score in enumerate(eval.scores):
-            to_save.loc[:, eval.names[i] + scorename] = cls_score
+            to_save_.loc[:, eval.names[i] + scorename] = cls_score
 
-    to_save.to_csv(resfolder + "classification_scores_" + plottype + ".csv")
+    to_save_.to_csv(resfolder + "classification_scores_" + plottype + ".csv")

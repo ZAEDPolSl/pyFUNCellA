@@ -3,8 +3,8 @@ norm='seurat'
 declare -a data_types=("PBMC" "Liver" "COVID" "BM")
 declare -a cluster_types=('gmm' 'kmeans' 'AUCell')
 
-data_folder="data/"
-res_folder="results/"
+data_folder="/mnt/pmanas/Ania/scrna-seq/data/"
+res_folder="/mnt/pmanas/Ania/scrna-seq/results/"
 
 for data_type in ${data_types[@]}; do
     for cluster_type in ${cluster_types[@]}; do
