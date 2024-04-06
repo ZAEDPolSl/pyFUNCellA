@@ -25,6 +25,8 @@ seaborn = "^0.12.2"
 tqdm = "^4.65.0"
 statsmodels = "^0.13.5"
 matplotlib = "^3.7.1"
+tensorflow = "^2.13.0"
+keras = "^2.13.1"
 
 [tool.poetry.dev-dependencies]
 

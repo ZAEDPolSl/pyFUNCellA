@@ -1,17 +1,16 @@
 import json
+import os
 import sys
+from time import time
 
 import numpy as np
 import pandas as pd
-from time import time
 from tqdm import tqdm
 
-from enrichment_auc.distributions import (
-    find_distribution,
-    find_grouped_dist_thresholds,
-    group_distributions,
-)
+from enrichment_auc.gmm.distributions import find_distribution
+from enrichment_auc.gmm.thresholds import correct_via_kmeans, find_thresholds
 from enrichment_auc.plot.plot_distributed_data import plot_mixtures
+from enrichment_auc.plot.plot_scatter_flow import plot_flow
 
 time_kmeans = 0
 time_gmm = 0
@@ -28,18 +27,12 @@ def pipeline_for_dist(score, geneset_name, score_name, save_dir):
     time_gmm += t
 
     t0 = time()
-    localizer_gmm = group_distributions(distributions, method="gmm")
-    thresholds_gmm = find_grouped_dist_thresholds(
-        distributions, localizer_gmm, score, geneset_name
-    )
+    thresholds_gmm = find_thresholds(distributions, score, geneset_name)
     t = time() - t0
     time_gmm += t
 
     t0 = time()
-    localizer_kmeans = group_distributions(distributions, method="kmeans")
-    thresholds_kmeans = find_grouped_dist_thresholds(
-        distributions, localizer_kmeans, score, geneset_name
-    )
+    thresholds_kmeans = correct_via_kmeans(distributions, thresholds_gmm)
     t = time() - t0
     time_kmeans += t
 
@@ -70,24 +63,25 @@ def pipeline_for_dist(score, geneset_name, score_name, save_dir):
             save_dir=save_dir + "/kmeans",
             file_only=True,
         )
-    return (
-        thresholds_gmm,
-        thresholds_kmeans,
-        distributions,
-        localizer_gmm,
-        localizer_kmeans,
-    )
+    return (thresholds_gmm, thresholds_kmeans, distributions)
 
 
-def evaluate_pas(scores, gs_names, geneset_info, res_folder, data_type, score_name):
+def evaluate_pas(
+    scores,
+    gs_names,
+    geneset_info,
+    res_folder,
+    data_type,
+    score_name,
+    embed=None,
+    labels_arr=None,
+):
     print(score_name)
     scores_thr = pd.DataFrame(0, index=gs_names, columns=np.arange(1))
     scores_thr_kmeans = pd.DataFrame(0, index=gs_names, columns=np.arange(1))
     scores_dist = []
     gmm_thrs = {}
     kmeans_thrs = {}
-    locs_gmm = []
-    locs_kmeans = []
 
     for i, gs_name in tqdm(enumerate(gs_names), total=len(gs_names)):
         gs_title = geneset_info.Title.where(geneset_info.ID == gs_name, gs_name).max()
@@ -96,13 +90,31 @@ def evaluate_pas(scores, gs_names, geneset_info, res_folder, data_type, score_na
             thresholds_gmm,
             thresholds_kmeans,
             distributions,
-            localizer_gmm,
-            localizer_kmeans,
         ) = pipeline_for_dist(score, gs_title, score_name, save_dir)
-        del distributions["TIC"], distributions["l_lik"]
         distributions["weights"] = (distributions["weights"]).tolist()
         distributions["mu"] = (distributions["mu"]).tolist()
         distributions["sigma"] = (distributions["sigma"]).tolist()
+        # if embed is not None and labels_arr is not None:
+        #     plot_flow(
+        #         embed,
+        #         score,
+        #         thresholds_kmeans,
+        #         labels_arr,
+        #         name=score_name,
+        #         gs_name=gs_name,
+        #         embed_name="t-SNE",
+        #         save_dir=save_dir + "/kmeans/flow/",
+        #     )
+        #     plot_flow(
+        #         embed,
+        #         score,
+        #         thresholds_gmm,
+        #         labels_arr,
+        #         name=score_name,
+        #         gs_name=gs_name,
+        #         embed_name="t-SNE",
+        #         save_dir=save_dir + "/top1/flow/",
+        #     )
 
         if all(thresholds_gmm.shape):
             scores_thr.loc[gs_name] = thresholds_gmm[-1]
@@ -117,26 +129,10 @@ def evaluate_pas(scores, gs_names, geneset_info, res_folder, data_type, score_na
         gmm_thrs[gs_name] = thresholds_gmm.tolist()
         kmeans_thrs[gs_name] = thresholds_kmeans.tolist()
 
-        localizer_gmm = localizer_gmm.tolist()
-        locs_gmm.append(localizer_gmm)
-        localizer_kmeans = localizer_kmeans.tolist()
-        locs_kmeans.append(localizer_kmeans)
-
     scores_thr.to_csv(res_folder + data_type + "/gmm_thr/" + score_name + "_thr.csv")
     scores_thr_kmeans.to_csv(
         res_folder + data_type + "/kmeans_thr/" + score_name + "_thr.csv"
     )
-
-    with open(
-        res_folder + data_type + "/gmm_thr/" + score_name + "_loc.json",
-        "w",
-    ) as fout:
-        json.dump(locs_gmm, fout)
-    with open(
-        res_folder + data_type + "/kmeans_thr/" + score_name + "_loc.json",
-        "w",
-    ) as fout:
-        json.dump(locs_kmeans, fout)
 
     with open(res_folder + data_type + "/" + score_name + "_dist.json", "w") as fout:
         json.dump(scores_dist, fout)
@@ -154,18 +150,19 @@ def evaluate_pas(scores, gs_names, geneset_info, res_folder, data_type, score_na
 
 
 score_names = [
-    "z",
-    "gsva",
-    "auc",
-    "cerno",
-    "ratios",
-    "vision",
-    "aucell",
-    "svd",
-    "sparse_pca",
-    "ssgsea",
-    "jasmine",
-    "mean",
+    # "z",
+    # "gsva",
+    # "auc",
+    # "cerno",
+    # "ratios",
+    # "vision",
+    # "aucell",
+    # "svd",
+    # "sparse_pca",
+    # "ssgsea",
+    # "jasmine",
+    # "mean",
+    "vae"
 ]  # all scores to run for each data type
 
 if __name__ == "__main__":
@@ -178,6 +175,25 @@ if __name__ == "__main__":
     geneset_info = pd.read_csv(
         data_folder + "filtered_genesets_modules.csv", index_col=0
     )
+    embed = None
+    labels_arr = None
+    if os.path.isfile(data_folder + "tsne.csv"):
+        embed = pd.read_csv(data_folder + "tsne.csv")
+        embed = embed.select_dtypes(["number"]).to_numpy().astype(float)
+    if os.path.isfile(data_folder + "true_labels.csv"):
+        labels_arr = pd.read_csv(data_folder + "true_labels.csv", index_col=0)
+        labels_arr = labels_arr["CellType"].to_numpy()
+
+    if not os.path.isdir(save_dir + "/kmeans/flow/"):
+        os.makedirs(save_dir + "/kmeans/flow/")
+    if not os.path.isdir(save_dir + "/top1/flow/"):
+        os.makedirs(save_dir + "/top1/flow/")
+
+    if not os.path.isdir(res_folder + data_type + "/gmm_thr/"):
+        os.makedirs(res_folder + data_type + "/gmm_thr/")
+    if not os.path.isdir(res_folder + data_type + "/kmeans_thr/"):
+        os.makedirs(res_folder + data_type + "/kmeans_thr/")
+
     for score_name in tqdm(score_names):
         # get scores
         scores = pd.read_csv(
@@ -187,7 +203,16 @@ if __name__ == "__main__":
         gs_names = scores.index.values.tolist()
         scores = scores.to_numpy()
 
-        evaluate_pas(scores, gs_names, geneset_info, res_folder, data_type, score_name)
+        evaluate_pas(
+            scores,
+            gs_names,
+            geneset_info,
+            res_folder,
+            data_type,
+            score_name,
+            embed,
+            labels_arr,
+        )
 
         if score_name in ["svd", "sparse_pca", "z", "vision"]:
             scores = np.abs(scores)
@@ -198,6 +223,8 @@ if __name__ == "__main__":
                 res_folder,
                 data_type,
                 score_name + "_abs",
+                embed,
+                labels_arr,
             )
 
     times = pd.DataFrame({"times": [time_gmm, time_kmeans]}, index=["top1", "kmeans"])

@@ -6,7 +6,6 @@ from scipy.stats import f_oneway, ttest_1samp, tukey_hsd
 plot_scorenames = {
     "AUCell": "aucell",
     "CERNO": "auc",
-    "CERNO F": "cerno",
     "JASMINE": "jasmine",
     "DropRatio": "ratios",
     "Mean": "mean",
@@ -20,13 +19,12 @@ plot_scorenames = {
     "SparsePCA abs": "sparse_pca_abs",
     "GSVA": "gsva",
     "ssGSEA": "ssgsea",
-    # "VAE": "vae",
+    "VAE": "vae",
 }
 
 palette = {
     "AUCell": "#077187",
     "CERNO": "#398D9F",
-    "CERNO F": "#42A8BD",
     "JASMINE": "#6AAAB7",
     "DropRatio": "#586BA4",
     "Mean": "#F4A460",
@@ -40,7 +38,7 @@ palette = {
     "SparsePCA abs": "rgba(188,122,143,0.71)",
     "GSVA": "#228B22",
     "ssGSEA": "#006400",
-    # "VAE": "#000000"
+    "VAE": "#000000",
 }
 
 

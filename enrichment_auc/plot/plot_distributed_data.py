@@ -4,7 +4,7 @@ import pandas as pd
 import scipy.stats as stats
 import seaborn as sns
 
-from enrichment_auc.distributions import categorize_by_thresholds
+from enrichment_auc.gmm.thresholds import categorize_by_thresholds
 
 from .legend_handler import move_legend
 
@@ -41,7 +41,7 @@ def plot_mixtures(
     # show density plot and histogram
     try:
         _ = sns.histplot(score, color="#B0B0B0", alpha=0.25, kde=False, stat="density")
-    except (ValueError, np.core._exceptions._ArrayMemoryError):
+    except (ValueError, np.core._exceptions._ArrayMemoryError, OverflowError):
         sns.histplot(
             x=score,
             element="step",
