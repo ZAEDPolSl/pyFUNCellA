@@ -48,13 +48,7 @@ def find_distribution(scores, gs_name="", sigma_dev=2.5, alpha_limit=0.001, SW=0
     counts = np.ones(scores.shape)
     scores = np.sort(scores)
     if stats.shapiro(scores).pvalue > 0.05:  # check if distribution is normal
-        pp, mu, sig = gaussian_mixture_hist(
-            scores,
-            counts,
-            SW=SW,
-            n_clusters=1,
-            KS=1
-        )
+        pp, mu, sig = gaussian_mixture_hist(scores, counts, SW=SW, n_clusters=1, KS=1)
     else:  # if not, approximate with Gaussian Mixture model
         pp, mu, sig = gaussian_mixture_hist(
             scores,

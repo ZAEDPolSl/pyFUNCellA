@@ -59,9 +59,8 @@ def gaussian_mixture_hist(
     )
     bic = -2 * logL[0] + 2 * np.log(TIC)
     BIC.append(bic)
-    if n_clusters == 1 or KS==1:
+    if n_clusters == 1 or KS == 1:
         return alpha[0], mu[0], sigma[0]
-        
 
     # >2 components
     stop = False
