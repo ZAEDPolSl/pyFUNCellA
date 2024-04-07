@@ -5,11 +5,8 @@ description = ""
 authors = ["amrukwa <a.mrukwa00@gmail.com>"]
 license = "Apache-2.0"
 readme = "README.md"
-include = [
-    "gamred_native",
-]
+
 [tool.poetry.build]
-script = "build.py"
 generate-setup-file = true
 
 [tool.poetry.dependencies]

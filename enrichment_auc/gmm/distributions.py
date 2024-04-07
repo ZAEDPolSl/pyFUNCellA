@@ -1,7 +1,6 @@
 import numpy as np
 from scipy import stats
 
-# from enrichment_auc._matlab_legacy import find_gaussian_mixtures
 from enrichment_auc.gmm.gaussian_mixture_hist import gaussian_mixture_hist
 
 
