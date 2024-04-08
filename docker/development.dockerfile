@@ -27,10 +27,10 @@ RUN poetry config virtualenvs.create false &&\
     poetry install --with dev &&\
     poetry build
 
-# RUN R -e "install.packages('renv', repos = c(CRAN = 'https://cloud.r-project.org'))"
-# COPY renv.lock renv.lock
-# COPY .Rprofile .Rprofile
-# RUN mkdir -p renv
-# COPY renv/activate.R renv/activate.R
-# COPY renv/settings.json renv/settings.json
-# RUN R -e "renv::restore()"
+RUN R -e "install.packages('renv', repos = c(CRAN = 'https://cloud.r-project.org'))"
+COPY renv.lock renv.lock
+COPY .Rprofile .Rprofile
+RUN mkdir -p renv
+COPY renv/activate.R renv/activate.R
+COPY renv/settings.json renv/settings.json
+RUN R -e "renv::restore()"
