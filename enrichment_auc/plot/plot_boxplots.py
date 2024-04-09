@@ -1,6 +1,7 @@
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
+import plotly.subplots as sp
 from scipy.stats import f_oneway, ttest_1samp, tukey_hsd
 
 plot_scorenames = {
@@ -110,10 +111,38 @@ def add_brackets(brackets, fig):
     return fig
 
 
-def mark_different_boxes(fig, pvals):
-    brackets = get_brackets(pvals)
-    fig = add_brackets(brackets, fig)
-    return fig
+def add_heatmap(fig, pvals, subtitle):
+    fig1 = px.imshow(
+        pvals,
+        x=[k for k, v in plot_scorenames.items()],
+        y=[k for k, v in plot_scorenames.items()],
+        text_auto=".2f",
+        color_continuous_scale="RdBu",
+        color_continuous_midpoint=0.05,
+    )
+    fig1.update_traces(
+        dict(showscale=False, coloraxis=None, colorscale="RdBu"),
+        selector={"type": "heatmap"},
+    )
+
+    fig_final = sp.make_subplots(
+        rows=2, cols=1, subplot_titles=(subtitle, "Tukey HSD p-values")
+    )
+    for i, figure in enumerate([fig, fig1]):
+        for trace in range(len(figure["data"])):
+            fig_final.append_trace(figure["data"][trace], row=i + 1, col=1)
+    fig_final.update_layout(height=1200, width=800)
+    return fig_final
+
+
+def mark_different_boxes(fig, pvals, celltype, subtitle):
+    if np.sum(pvals <= 0.05) >= 10:
+        fig_final = add_heatmap(fig, pvals, subtitle)
+    else:
+        brackets = get_brackets(pvals)
+        fig_final = add_brackets(brackets, fig)
+    fig_final.update_layout(template="plotly_white", title=celltype)
+    return fig_final
 
 
 def visualize_methods(df, cell_types, namescores, plot_folder):
@@ -138,9 +167,9 @@ def visualize_methods(df, cell_types, namescores, plot_folder):
                 labels={"method": "PAS method", "value": name[:-1].replace("_", " ")},
                 category_orders={"method": list(plot_scorenames.keys())},
                 height=600,
-                width=700,
+                width=750,
             )
-            fig = mark_different_boxes(fig, pvals)
+            fig = mark_different_boxes(fig, pvals, celltype, subtitle)
             fig.update_xaxes(tickangle=45)
             fig.write_image(
                 plot_folder + celltype.replace(" ", "_") + "_" + name[:-1] + ".png"
@@ -169,7 +198,7 @@ def visualize_difference(df1, df2, namescores, plot_folder, name1, name2):
             },
             category_orders={"method": list(plot_scorenames.keys())},
             height=600,
-            width=700,
+            width=750,
         )
         fig.add_hline(y=0.0, line=dict(dash="dash", color="firebrick", width=1))
         fig.update_xaxes(tickangle=45)
