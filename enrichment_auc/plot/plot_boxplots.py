@@ -118,10 +118,9 @@ def add_heatmap(fig, pvals, subtitle):
         y=[k for k, v in plot_scorenames.items()],
         text_auto=".2f",
         color_continuous_scale="RdBu",
-        color_continuous_midpoint=0.05,
     )
     fig1.update_traces(
-        dict(showscale=False, coloraxis=None, colorscale="RdBu"),
+        dict(showscale=False, coloraxis=None, colorscale="RdBu", zmin=0, zmax=1),
         selector={"type": "heatmap"},
     )
 
