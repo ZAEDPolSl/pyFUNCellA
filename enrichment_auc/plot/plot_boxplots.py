@@ -21,6 +21,7 @@ plot_scorenames = {
     "GSVA": "gsva",
     "ssGSEA": "ssgsea",
     "VAE": "vae",
+    "VAE corr": "vae_corr",
 }
 
 palette = {
@@ -40,6 +41,7 @@ palette = {
     "GSVA": "#228B22",
     "ssGSEA": "#006400",
     "VAE": "#000000",
+    "VAE corr": "#323232",
 }
 
 

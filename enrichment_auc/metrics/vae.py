@@ -3,7 +3,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from tqdm import tqdm
 
 from enrichment_auc.metrics.vae_bn import VAE_BN
-
+import enrichment_auc.metrics.mean as mean
 
 class VAE(BaseEstimator, TransformerMixin):
     def __init__(
@@ -77,4 +77,26 @@ def VAE_PAS(genesets, data, genes):
         enumerate(genesets.items()), total=len(genesets)
     ):
         pas[i] = _vae_pas(geneset_genes, data, genes, gs_name)
+    return pas
+
+
+def find_most_enriched(genesets, data, genes):
+    res = mean.MEAN(genesets, data, genes)
+    most_enriched_idx = np.argmax(res, axis=1)
+    return most_enriched_idx
+    
+
+def correct_pas(pas, enriched_idx):
+    if pas[enriched_idx] >= np.mean(pas):
+        return pas
+    return pas * (-1)
+
+
+def correct_order(data, genesets, genes, pas):
+    most_enriched_idx = find_most_enriched(genesets, data, genes)
+    for i, (gs_name, geneset_genes) in tqdm(
+        enumerate(genesets.items()), total=len(genesets)
+    ):
+        current_pas = pas[i, :]
+        pas[i, :] = correct_pas(current_pas, most_enriched_idx[i])
     return pas
