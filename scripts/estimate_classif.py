@@ -23,6 +23,7 @@ scorenames = [
     "gsva",
     "ssgsea",
     "vae",
+    "vae_corr",
 ]
 
 names = [

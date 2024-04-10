@@ -5,6 +5,7 @@ from tqdm import tqdm
 from enrichment_auc.metrics.vae_bn import VAE_BN
 import enrichment_auc.metrics.mean as mean
 
+
 class VAE(BaseEstimator, TransformerMixin):
     def __init__(
         self,
@@ -84,7 +85,7 @@ def find_most_enriched(genesets, data, genes):
     res = mean.MEAN(genesets, data, genes)
     most_enriched_idx = np.argmax(res, axis=1)
     return most_enriched_idx
-    
+
 
 def correct_pas(pas, enriched_idx):
     if pas[enriched_idx] >= np.mean(pas):

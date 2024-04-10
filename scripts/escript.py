@@ -36,7 +36,7 @@ def pipeline_for_dist(score, geneset_name, score_name, save_dir):
     t = time() - t0
     time_kmeans += t
 
-    if score.max() - score.min() > 10**(-20):
+    if score.max() - score.min() > 10 ** (-20):
         thr_gmm = score.max()
         thr_kmeans = score.max()
         if thresholds_gmm.shape[0] != 0:
@@ -162,7 +162,8 @@ score_names = [
     # "ssgsea",
     # "jasmine",
     # "mean",
-    "vae"
+    "vae",
+    "vae_corr",
 ]  # all scores to run for each data type
 
 if __name__ == "__main__":
@@ -177,8 +178,8 @@ if __name__ == "__main__":
     )
     embed = None
     labels_arr = None
-    if os.path.isfile(data_folder + "tsne.csv"):
-        embed = pd.read_csv(data_folder + "tsne.csv")
+    if os.path.isfile(data_folder + "vae.csv"):
+        embed = pd.read_csv(data_folder + "vae.csv")
         embed = embed.select_dtypes(["number"]).to_numpy().astype(float)
     if os.path.isfile(data_folder + "true_labels.csv"):
         labels_arr = pd.read_csv(data_folder + "true_labels.csv", index_col=0)

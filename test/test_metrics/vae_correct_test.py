@@ -19,14 +19,14 @@ def test_find_most_enriched():
     )
     res = vae.find_most_enriched(genesets, data, genes)
     assert np.array_equal(expected, res)
-    
-    
+
+
 def test_leaves_correct_order():
     enriched_idx = 3
     expected = np.array([7.0 / 3, 7.0 / 3, 6.0 / 3, 11.0 / 3, 0.0])
     res = vae.correct_pas(expected, enriched_idx)
     assert np.array_equal(expected, res)
-    
+
 
 def test_reverts_order():
     enriched_idx = 4
@@ -34,7 +34,7 @@ def test_reverts_order():
     expected = np.array([-7.0 / 3, -7.0 / 3, -6.0 / 3, -11.0 / 3, 0.0])
     res = vae.correct_pas(pas, enriched_idx)
     assert np.array_equal(expected, res)
-    
+
 
 def test_corrects_order():
     genes = ["a", "b", "c", "d", "e"]
@@ -48,9 +48,17 @@ def test_corrects_order():
             [0, 5, 0, 5, 0],
         ]
     )
-    pas = np.array([[7.0 / 3, 7.0 / 3, 6.0 / 3, 11.0 / 3, 0.0],
-                    [7.0 / 3, 7.0 / 3, 9.0 / 3, -1.0 / 3, 11.0]])
-    expected = np.array([[7.0 / 3, 7.0 / 3, 6.0 / 3, 11.0 / 3, 0.0],
-                        [-7.0 / 3, -7.0 / 3, -9.0 / 3, 1.0 / 3, -11.0]])
+    pas = np.array(
+        [
+            [7.0 / 3, 7.0 / 3, 6.0 / 3, 11.0 / 3, 0.0],
+            [7.0 / 3, 7.0 / 3, 9.0 / 3, -1.0 / 3, 11.0],
+        ]
+    )
+    expected = np.array(
+        [
+            [7.0 / 3, 7.0 / 3, 6.0 / 3, 11.0 / 3, 0.0],
+            [-7.0 / 3, -7.0 / 3, -9.0 / 3, 1.0 / 3, -11.0],
+        ]
+    )
     res = vae.correct_order(data, genesets, genes, pas)
     assert np.array_equal(expected, res)
