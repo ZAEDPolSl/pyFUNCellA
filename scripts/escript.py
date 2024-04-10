@@ -12,29 +12,13 @@ from enrichment_auc.gmm.thresholds import correct_via_kmeans, find_thresholds
 from enrichment_auc.plot.plot_distributed_data import plot_mixtures
 from enrichment_auc.plot.plot_scatter_flow import plot_flow
 
-time_kmeans = 0
-time_gmm = 0
-
 
 def pipeline_for_dist(score, geneset_name, score_name, save_dir):
     score = np.nan_to_num(score)
     # get mixtures and thresholds
-    t0 = time()
     distributions = find_distribution(score, geneset_name)
-    t = time() - t0
-    global time_kmeans, time_gmm
-    time_kmeans += t
-    time_gmm += t
-
-    t0 = time()
     thresholds_gmm = find_thresholds(distributions, score, geneset_name)
-    t = time() - t0
-    time_gmm += t
-
-    t0 = time()
     thresholds_kmeans = correct_via_kmeans(distributions, thresholds_gmm)
-    t = time() - t0
-    time_kmeans += t
 
     if score.max() - score.min() > 10 ** (-20):
         thr_gmm = score.max()
@@ -94,27 +78,27 @@ def evaluate_pas(
         distributions["weights"] = (distributions["weights"]).tolist()
         distributions["mu"] = (distributions["mu"]).tolist()
         distributions["sigma"] = (distributions["sigma"]).tolist()
-        # if embed is not None and labels_arr is not None:
-        #     plot_flow(
-        #         embed,
-        #         score,
-        #         thresholds_kmeans,
-        #         labels_arr,
-        #         name=score_name,
-        #         gs_name=gs_name,
-        #         embed_name="t-SNE",
-        #         save_dir=save_dir + "/kmeans/flow/",
-        #     )
-        #     plot_flow(
-        #         embed,
-        #         score,
-        #         thresholds_gmm,
-        #         labels_arr,
-        #         name=score_name,
-        #         gs_name=gs_name,
-        #         embed_name="t-SNE",
-        #         save_dir=save_dir + "/top1/flow/",
-        #     )
+        if embed is not None and labels_arr is not None:
+            plot_flow(
+                embed,
+                score,
+                thresholds_kmeans,
+                labels_arr,
+                name=score_name,
+                gs_name=gs_name,
+                embed_name="t-SNE",
+                save_dir=save_dir + "/kmeans/flow/",
+            )
+            plot_flow(
+                embed,
+                score,
+                thresholds_gmm,
+                labels_arr,
+                name=score_name,
+                gs_name=gs_name,
+                embed_name="t-SNE",
+                save_dir=save_dir + "/top1/flow/",
+            )
 
         if all(thresholds_gmm.shape):
             scores_thr.loc[gs_name] = thresholds_gmm[-1]
@@ -150,18 +134,18 @@ def evaluate_pas(
 
 
 score_names = [
-    # "z",
-    # "gsva",
-    # "auc",
-    # "cerno",
-    # "ratios",
-    # "vision",
-    # "aucell",
-    # "svd",
-    # "sparse_pca",
-    # "ssgsea",
-    # "jasmine",
-    # "mean",
+    "z",
+    "gsva",
+    "auc",
+    "cerno",
+    "ratios",
+    "vision",
+    "aucell",
+    "svd",
+    "sparse_pca",
+    "ssgsea",
+    "jasmine",
+    "mean",
     "vae",
     "vae_corr",
 ]  # all scores to run for each data type
@@ -227,6 +211,3 @@ if __name__ == "__main__":
                 embed,
                 labels_arr,
             )
-
-    times = pd.DataFrame({"times": [time_gmm, time_kmeans]}, index=["top1", "kmeans"])
-    times.to_csv(res_folder + data_type + "/times_thrs.csv")
