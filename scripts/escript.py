@@ -78,7 +78,7 @@ def evaluate_pas(
         distributions["weights"] = (distributions["weights"]).tolist()
         distributions["mu"] = (distributions["mu"]).tolist()
         distributions["sigma"] = (distributions["sigma"]).tolist()
-        if embed is not None and labels_arr is not None:
+        if embed is not None and labels_arr is not None and score.max() - score.min() > 10 ** (-20):
             plot_flow(
                 embed,
                 score,
