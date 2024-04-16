@@ -35,7 +35,7 @@ def _merge_gmm(dist, sigma_dev=1.0, alpha_limit=0.001):
     }
 
 
-def find_distribution(scores, gs_name="", sigma_dev=2.5, alpha_limit=0.001, SW=0.25):
+def find_distribution(scores, gs_name="", sigma_dev=1.0, alpha_limit=0.001, SW=0.25):
     if scores.max() - scores.min() <= 10 ** (-20):
         print("All scores were of the same value in {}.".format(gs_name))
         return {
