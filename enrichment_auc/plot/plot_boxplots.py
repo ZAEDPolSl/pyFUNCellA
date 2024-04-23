@@ -142,6 +142,7 @@ def mark_different_boxes(fig, pvals, celltype, subtitle):
     else:
         brackets = get_brackets(pvals)
         fig_final = add_brackets(brackets, fig)
+        celltype = celltype + subtitle
     fig_final.update_layout(template="plotly_white", title=celltype)
     return fig_final
 
