@@ -121,10 +121,13 @@ def add_heatmap(fig, pvals, subtitle):
         text_auto=".2f",
         color_continuous_scale="RdBu",
     )
+    z_text = pvals.tolist()
+    z_text = [["{:.2f}".format(z) if z >= 0.01 else "<0.01"  for z in z_list] for z_list in z_text]
     fig1.update_traces(
         dict(showscale=False, coloraxis=None, colorscale="RdBu", zmin=0, zmax=1),
         selector={"type": "heatmap"},
     )
+    fig1.update_traces(text=z_text, texttemplate="%{text}")
 
     fig_final = sp.make_subplots(
         rows=2, cols=1, subplot_titles=(subtitle, "Tukey HSD p-values")
