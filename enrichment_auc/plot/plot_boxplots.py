@@ -179,6 +179,33 @@ def visualize_methods(df, cell_types, namescores, plot_folder):
             fig.write_image(
                 plot_folder + celltype.replace(" ", "_") + "_" + name[:-1] + ".png"
             )
+    for name in namescores:
+            vis = df.loc[df.columns.str.contains(name)]
+            pvals, subtitle = check_differences(vis, name)
+            vis.columns = vis.columns.str.replace(name, "")
+            vis = vis.melt()
+            vis = vis.rename(columns={"variable": "method"})
+            vis["method"] = vis["method"].map(
+                {v: k for k, v in plot_scorenames.items()}
+            )
+            fig = px.box(
+                vis,
+                x="method",
+                y="value",
+                color="method",
+                color_discrete_map=palette,
+                title="merged" + subtitle,
+                template="plotly_white",
+                labels={"method": "PAS method", "value": name[:-1].replace("_", " ")},
+                category_orders={"method": list(plot_scorenames.keys())},
+                height=600,
+                width=750,
+            )
+            fig = mark_different_boxes(fig, pvals, "merged", subtitle)
+            fig.update_xaxes(tickangle=45)
+            fig.write_image(
+                plot_folder + "merged_" + name[:-1] + ".png"
+            )
 
 
 def visualize_difference(df1, df2, namescores, plot_folder, name1, name2):
