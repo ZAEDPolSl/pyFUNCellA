@@ -160,7 +160,7 @@ def EM_iter_hist(x, y, alpha, mu, sig, TIC, SW=0.25):
     KS = np.max(alpha.shape)
     # NOT READY FOR PRIME TIME
     # more emphasis on SW in documentation - add warning to look at the histogram before procceding
-    SW = np.power((max(x) - min(x)) / (4 * KS), 2)
+    # SW = np.power((max(x) - min(x)) / (4 * KS), 2)
     min_sigdev = np.power((max(x) - min(x)) * SW / KS, 2)
     eps_change = 1e-4
 

@@ -8,7 +8,7 @@ plot_scorenames = {
     "AUCell": "aucell",
     "CERNO": "auc",
     "JASMINE": "jasmine",
-    "DropRatio": "ratios",
+    "BINA": "bina",
     "Mean": "mean",
     "Vision": "vision",
     "Vision abs": "vision_abs",
@@ -28,7 +28,7 @@ palette = {
     "AUCell": "#077187",
     "CERNO": "#398D9F",
     "JASMINE": "#6AAAB7",
-    "DropRatio": "#586BA4",
+    "BINA": "#586BA4",
     "Mean": "#F4A460",
     "Vision": "#FFC125",
     "Vision abs": "rgba(255,193,37,0.71)",
@@ -122,7 +122,10 @@ def add_heatmap(fig, pvals, subtitle):
         color_continuous_scale="RdBu",
     )
     z_text = pvals.tolist()
-    z_text = [["{:.2f}".format(z) if z >= 0.01 else "<0.01"  for z in z_list] for z_list in z_text]
+    z_text = [
+        ["{:.2f}".format(z) if z >= 0.01 else "<0.01" for z in z_list]
+        for z_list in z_text
+    ]
     fig1.update_traces(
         dict(showscale=False, coloraxis=None, colorscale="RdBu", zmin=0, zmax=1),
         selector={"type": "heatmap"},
@@ -180,14 +183,12 @@ def visualize_methods(df, cell_types, namescores, plot_folder):
                 plot_folder + celltype.replace(" ", "_") + "_" + name[:-1] + ".png"
             )
     for name in namescores:
-        vis = df.loc[:,df.columns.str.contains(name)]
+        vis = df.loc[:, df.columns.str.contains(name)]
         pvals, subtitle = check_differences(vis, name)
         vis.columns = vis.columns.str.replace(name, "")
         vis = vis.melt()
         vis = vis.rename(columns={"variable": "method"})
-        vis["method"] = vis["method"].map(
-            {v: k for k, v in plot_scorenames.items()}
-        )
+        vis["method"] = vis["method"].map({v: k for k, v in plot_scorenames.items()})
         fig = px.box(
             vis,
             x="method",
@@ -203,9 +204,7 @@ def visualize_methods(df, cell_types, namescores, plot_folder):
         )
         fig = mark_different_boxes(fig, pvals, "merged", subtitle)
         fig.update_xaxes(tickangle=45)
-        fig.write_image(
-            plot_folder + "merged_" + name[:-1] + ".png"
-        )
+        fig.write_image(plot_folder + "merged_" + name[:-1] + ".png")
 
 
 def visualize_difference(df1, df2, namescores, plot_folder, name1, name2):

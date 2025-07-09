@@ -46,6 +46,6 @@ def test_aucell_sets_ranks():
             [0.0, 0.5, 0.4, 0.3, 0.2, 0.1],
         ]
     )
-    score = aucell.AUCELL(genesets, data, genes)
+    score = aucell.AUCELL(genesets, data, genes, thr=0.25)
     score_expected = np.array([1, 0, 1.0 / 3, 2.0 / 3, 1, 1])
     assert np.isclose(score_expected, score, atol=10e-4).all()

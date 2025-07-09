@@ -7,9 +7,9 @@ from time import time
 
 from enrichment_auc.metrics import (
     aucell,
+    bina,
     cerno,
     gsea,
-    ratio,
     svd,
     jasmine,
     vision,
@@ -34,7 +34,7 @@ if __name__ == "__main__":
 
     # get scores with single output:
     scores_functions = [
-        ratio.RATIO,
+        bina.BINA,
         svd.SVD,
         svd.sparse_PCA,
         vision.VISION,
@@ -46,7 +46,7 @@ if __name__ == "__main__":
         gsea.SSGSEA,
     ]
     scores_names = [
-        "ratios",
+        "bina",
         "svd",
         "sparse_pca",
         "vision",

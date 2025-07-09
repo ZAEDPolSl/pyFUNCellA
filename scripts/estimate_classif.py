@@ -10,7 +10,7 @@ scorenames = [
     "auc",
     "cerno",
     "jasmine",
-    "ratios",
+    "bina",
     "mean",
     "vision",
     "vision_abs",
@@ -69,9 +69,9 @@ if __name__ == "__main__":
     true_labels.loc[
         true_labels["CellType"].isin(["CD4+ T cell", "Cytotoxic T cell"]), "CellType"
     ] = "T cell"
-    true_labels.loc[
-        true_labels["CellType"].isin(["mature B cell"]), "CellType"
-    ] = "B cell"
+    true_labels.loc[true_labels["CellType"].isin(["mature B cell"]), "CellType"] = (
+        "B cell"
+    )
     true_labels.loc[
         true_labels["CellType"].isin(["Natural killer cell", "natural killer cell"]),
         "CellType",
