@@ -22,8 +22,6 @@ scorenames = [
     "sparse_pca_abs",
     "gsva",
     "ssgsea",
-    "vae",
-    "vae_corr",
 ]
 
 names = [

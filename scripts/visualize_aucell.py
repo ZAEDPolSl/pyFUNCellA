@@ -9,6 +9,7 @@ from tqdm import tqdm
 
 from enrichment_auc.plot.plot_scatter_flow import plot_flow
 
+
 def evaluate_pas(
     scores,
     thrs,
@@ -25,7 +26,11 @@ def evaluate_pas(
         gs_title = geneset_info.Title.where(geneset_info.ID == gs_name, gs_name).max()
         score = scores[i, :]
         thr = [thrs.loc[gs_name]]
-        if embed is not None and labels_arr is not None and score.max() - score.min() > 10 ** (-20):
+        if (
+            embed is not None
+            and labels_arr is not None
+            and score.max() - score.min() > 10 ** (-20)
+        ):
             plot_flow(
                 embed,
                 score,
@@ -36,6 +41,7 @@ def evaluate_pas(
                 embed_name="t-SNE",
                 save_dir=save_dir + "/AUCell/flow/",
             )
+
 
 score_names = [
     "z",
@@ -50,8 +56,6 @@ score_names = [
     "ssgsea",
     "jasmine",
     "mean",
-    "vae",
-    "vae_corr",
 ]  # all scores to run for each data type
 
 if __name__ == "__main__":
@@ -104,7 +108,7 @@ if __name__ == "__main__":
             thrs = pd.read_csv(
                 res_folder + data_type + "/AUCell_thr/" + score_name + "_abs_thr.csv",
                 index_col=0,
-            ) 
+            )
             scores = np.abs(scores)
             evaluate_pas(
                 scores,
