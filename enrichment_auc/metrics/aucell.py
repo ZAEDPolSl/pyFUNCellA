@@ -33,7 +33,7 @@ def _aucell(
     return aucell
 
 
-def AUCELL(genesets, data, genes, thr=0.25):
+def AUCELL(genesets, data, genes, thr=0.05):
     data = rank_genes(data, ordinal=True)
     aucell = np.zeros((len(genesets), data.shape[1]))
     N_tot = len(genes)
