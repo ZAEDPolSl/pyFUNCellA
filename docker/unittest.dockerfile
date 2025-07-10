@@ -1,5 +1,5 @@
 FROM python:3.9-slim AS base
-ENV PYTHONUNBUFFERED TRUE
+ENV PYTHONUNBUFFERED=TRUE
 RUN mkdir -p /root/.config/matplotlib &&\
     echo "backend : Agg" > /root/.config/matplotlib/matplotlibrc
 WORKDIR /app
@@ -9,7 +9,8 @@ RUN apt-get update &&\
     gcc \
     curl \
     git \
-    ssh &&\
+    ssh \
+    r-base &&\
     rm -rf /var/lib/apt/lists/*
 ENV POETRY_HOME="/opt/poetry"
 RUN curl -sSL https://install.python-poetry.org | python -

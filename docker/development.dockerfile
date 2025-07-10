@@ -1,5 +1,5 @@
 FROM python:3.10-slim AS base
-ENV PYTHONUNBUFFERED TRUE
+ENV PYTHONUNBUFFERED=TRUE
 RUN mkdir -p /root/.config/matplotlib &&\
     echo "backend : Agg" > /root/.config/matplotlib/matplotlibrc
 WORKDIR /app

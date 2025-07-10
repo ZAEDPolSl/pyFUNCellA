@@ -4,16 +4,21 @@ RUN mkdir -p /root/.config/matplotlib &&\
     echo "backend : Agg" > /root/.config/matplotlib/matplotlibrc
 WORKDIR /app
 RUN apt-get update &&\
-    apt-get install -y libgomp1 &&\
+    apt-get install -y \
+    libgomp1 \
+    r-base &&\
     rm -rf /var/lib/apt/lists/*
 
 
-FROM base as builder
+FROM base AS builder
 SHELL ["/bin/bash", "-c"]
 RUN mkdir -p /install/lib/python3.7/site-packages
 ENV PYTHONPATH .:/install/lib/python3.7/site-packages
 RUN apt-get update &&\
-    apt-get install -y gcc curl &&\
+    apt-get install -y \
+    gcc \
+    curl \
+    r-base &&\
     rm -rf /var/lib/apt/lists/*
 ENV POETRY_HOME="/opt/poetry"
 RUN curl -sSL https://install.python-poetry.org | python -
