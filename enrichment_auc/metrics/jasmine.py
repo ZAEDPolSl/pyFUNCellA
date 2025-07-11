@@ -54,8 +54,10 @@ def calc_odds_ratio(data, geneset_genes, genes):
     sig_genes_ne = np.maximum(len(sig_gene_indices) - sig_genes_exp, 1)
     non_sig_genes_ne = np.maximum(len(non_sig_gene_indices) - non_sig_genes_exp, 1)
 
-    # Calculate odds ratio
-    or_values = (sig_genes_exp * non_sig_genes_ne) / (sig_genes_ne * non_sig_genes_exp)
+    # Calculate odds ratio with protection against division by zero
+    denominator = sig_genes_ne * non_sig_genes_exp
+    denominator = np.maximum(denominator, 1e-10)  # Avoid division by zero
+    or_values = (sig_genes_exp * non_sig_genes_ne) / denominator
 
     return or_values
 
@@ -122,10 +124,14 @@ def scale_minmax(x):
         Min-max normalized array
     """
     x = np.asarray(x)
-    if np.isnan(x).all() or (np.max(x) - np.min(x)) == 0:
+    if np.isnan(x).all():
         return np.zeros_like(x)
 
-    x_scaled = (x - np.min(x)) / (np.max(x) - np.min(x))
+    x_range = np.max(x) - np.min(x)
+    if x_range == 0 or np.isnan(x_range):
+        return np.zeros_like(x)
+
+    x_scaled = (x - np.min(x)) / x_range
     return x_scaled
 
 
