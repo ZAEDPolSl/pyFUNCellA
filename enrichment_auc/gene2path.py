@@ -40,6 +40,7 @@ def gene2path(
     filt_max: int = 500,
     aucell_threshold: float = 0.05,
     variance_filter_threshold: Optional[float] = None,
+    type: Literal["oddsratio", "likelihood"] = "oddsratio",
 ) -> pd.DataFrame:
     """
     Transform gene-level data to pathway-level scores using single-sample methods.
@@ -58,6 +59,7 @@ def gene2path(
         filt_max: Maximum number of genes a pathway can have
         aucell_threshold: Threshold parameter for AUCELL method (fraction of top genes to consider)
         variance_filter_threshold: If provided, filter genes by variance (keep top fraction)
+        type: Type of effect size adjustment for JASMINE method ("oddsratio" or "likelihood")
 
     Returns:
         DataFrame with pathways as rows and samples as columns containing pathway activity scores
@@ -68,6 +70,7 @@ def gene2path(
         - BINA: Binary scoring based on proportion of expressed genes with logit transformation
         - AUCELL: Area Under the Curve method for gene set enrichment
         - JASMINE: Dropout-aware method for single-cell data with effect size adjustment
+                   Uses 'type' parameter to specify effect size method (oddsratio or likelihood)
         - ZSCORE: Z-score based method using Stouffer integration
         - SSGSEA: Single-sample Gene Set Enrichment Analysis (requires R)
 
@@ -127,19 +130,34 @@ def gene2path(
     if variance_filter_threshold is not None:
         print(f"Applying variance filtering (keep top {variance_filter_threshold:.2%})")
         if isinstance(data, pd.DataFrame):
-            filtered_data = variance_filter(data, leave_best=variance_filter_threshold)
-            data_array = filtered_data.values
-            genes = list(filtered_data.index)
+            try:
+                filtered_data = variance_filter(
+                    data, leave_best=variance_filter_threshold
+                )
+                if isinstance(filtered_data, pd.DataFrame):
+                    data_array = filtered_data.values
+                    genes = list(filtered_data.index)
+                else:
+                    raise ValueError("Unexpected return type from variance filter")
+            except Exception as e:
+                print(f"Warning: Variance filtering failed: {e}")
+                print("Continuing without variance filtering...")
         else:
             # Use enhanced filter function for numpy arrays
-            filtered_result = variance_filter(
-                data_array, leave_best=variance_filter_threshold, genes=genes
-            )
-            if isinstance(filtered_result, tuple):
-                data_array, genes = filtered_result
-            else:
-                raise ValueError("Unexpected return type from variance filter")
-        print(f"After variance filtering: {len(genes)} genes")
+            try:
+                filtered_result = variance_filter(
+                    data_array, leave_best=variance_filter_threshold, genes=genes
+                )
+                if isinstance(filtered_result, tuple) and len(filtered_result) == 2:
+                    data_array, genes = filtered_result
+                else:
+                    raise ValueError("Unexpected return type from variance filter")
+            except Exception as e:
+                print(f"Warning: Variance filtering failed: {e}")
+                print("Continuing without variance filtering...")
+
+        if genes is not None:
+            print(f"After variance filtering: {len(genes)} genes")
 
     # Ensure genes is not None for the rest of the function
     if genes is None:
@@ -171,7 +189,7 @@ def gene2path(
     elif method == "AUCELL":
         scores = AUCELL(genesets, data_array, genes, aucell_threshold)
     elif method == "JASMINE":
-        scores = JASMINE(genesets, data_array, genes)
+        scores = JASMINE(genesets, data_array, genes, effect_size=type)
     elif method == "ZSCORE":
         scores = ZSCORE(genesets, data_array, genes)
     elif method == "SSGSEA":
@@ -240,15 +258,30 @@ def run_example():
     for method in methods:
         try:
             print(f"\nTesting {method} method...")
-            scores = gene2path(
-                data=data,
-                genesets=genesets,
-                genes=genes,
-                method=method,  # type: ignore
-            )
-            print(
-                f"✓ {method}: Generated {scores.shape[0]} pathway scores for {scores.shape[1]} samples"
-            )
+            if method == "JASMINE":
+                # Test both JASMINE types
+                for jasmine_type in ["oddsratio", "likelihood"]:
+                    print(f"  Testing JASMINE with {jasmine_type}...")
+                    scores = gene2path(
+                        data=data,
+                        genesets=genesets,
+                        genes=genes,
+                        method=method,  # type: ignore
+                        type=jasmine_type,  # type: ignore
+                    )
+                    print(
+                        f"  ✓ JASMINE ({jasmine_type}): Generated {scores.shape[0]} pathway scores for {scores.shape[1]} samples"
+                    )
+            else:
+                scores = gene2path(
+                    data=data,
+                    genesets=genesets,
+                    genes=genes,
+                    method=method,  # type: ignore
+                )
+                print(
+                    f"✓ {method}: Generated {scores.shape[0]} pathway scores for {scores.shape[1]} samples"
+                )
 
         except Exception as e:
             print(f"✗ {method}: Failed with error: {str(e)}")
