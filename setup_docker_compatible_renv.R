@@ -14,29 +14,30 @@ if (!require("renv", quietly = TRUE)) {
 if (file.exists("renv.lock")) {
     cat("Found renv.lock, initializing renv...\n")
     renv::init(bare = TRUE)
-    
+
     # Restore packages from renv.lock
     cat("Restoring packages from renv.lock...\n")
     renv::restore(confirm = FALSE)
-    
+
     cat("✓ renv restore completed\n")
 } else {
     cat("No renv.lock found, setting up fresh renv environment...\n")
     renv::init(bare = TRUE)
-    
+
     # Install essential packages
-    essential_packages <- c("BiocManager", "rjson", "GSVA", "remotes")
-    
+    essential_packages <- c("BiocManager", "rjson", "GSVA", "remotes", "AUCell")
+
     cat("Installing essential packages via renv...\n")
     renv::install("BiocManager")
     renv::install("rjson")
     renv::install("bioc::GSVA")
     renv::install("remotes")
-    
+    renv::install("bioc::AUCell")
+
     # Install dpGMM from GitHub
     cat("Installing dpGMM from GitHub...\n")
     renv::install("ZAEDPolSl/dpGMM")
-    
+
     # Create snapshot
     cat("Creating renv snapshot...\n")
     renv::snapshot()
@@ -64,7 +65,7 @@ copy_count <- 0
 for (pkg in pkg_names) {
     src_path <- file.path(renv_lib, pkg)
     dst_path <- file.path(site_lib, pkg)
-    
+
     if (dir.exists(src_path)) {
         # Check if it's a symlink and resolve it
         if (Sys.readlink(src_path) != "") {
@@ -102,7 +103,7 @@ cat("✓ Copied", copy_count, "packages to site-library\n")
 cat("Updated library paths:", .libPaths(), "\n")
 
 # Verify essential packages are available
-essential_packages <- c("BiocManager", "rjson", "GSVA", "dpGMM")
+essential_packages <- c("BiocManager", "rjson", "GSVA", "dpGMM", "AUCell")
 cat("\nVerifying essential packages:\n")
 for (pkg in essential_packages) {
     if (require(pkg, quietly = TRUE, character.only = TRUE)) {
