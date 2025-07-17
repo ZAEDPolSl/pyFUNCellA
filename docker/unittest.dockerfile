@@ -116,4 +116,4 @@ COPY enrichment_auc /app/enrichment_auc
 COPY test /app/test
 
 # Run all tests
-RUN /app/venv/bin/python -m pytest test/ -v --tb=short
+RUN /app/venv/bin/python -m pytest test/
