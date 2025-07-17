@@ -11,9 +11,9 @@ generate-setup-file = true
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.12"
-setuptools = ">=67.7.2"
+setuptools = ">=68.0.0"
 importlib-metadata = "^6.6.0"
-numpy = "^1.24.3"
+numpy = ">=1.24.3,<2.0.0"
 pandas = "^2.0.1"
 scipy = "^1.8"
 scikit-learn = "^1.2.2"
@@ -22,9 +22,7 @@ seaborn = "^0.12.2"
 tqdm = "^4.65.0"
 statsmodels = "^0.14.0"
 matplotlib = "^3.7.1"
-rpy2 = "^3.6.1"
-
-[tool.poetry.dev-dependencies]
+rpy2 = "3.5.16"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.3.1"
