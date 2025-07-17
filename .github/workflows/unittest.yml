@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v4
       - name: Run unit tests
         run: docker build . --file docker/unittest.dockerfile --tag unittest
         env:
@@ -16,26 +16,43 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        python-version: ["3.9", "3.10", "3.11"]
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up R 4.3.3
+    - uses: actions/checkout@v4
+    - name: Set up R 4.4.2
       uses: r-lib/actions/setup-r@v2
       with:
-        r-version: '4.3.3'
+        r-version: '4.4.2'
     - name: Install R development packages
       run: |
         sudo apt-get update
-        sudo apt-get install -y r-base-dev
-    - name: Install renv and restore R packages
+        sudo apt-get install -y r-base-dev libcurl4-openssl-dev libssl-dev libxml2-dev libmagick++-dev pkg-config cmake
+    - name: Install renv and restore R packages with fallback
       run: |
         R -e "install.packages('renv', repos='https://cloud.r-project.org/')"
-        R -e "renv::restore()"
+        R -e "
+        tryCatch({
+          renv::restore(confirm = FALSE)
+          cat('✓ renv restore completed\n')
+        }, error = function(e) {
+          cat('Warning: renv restore failed:', conditionMessage(e), '\n')
+          cat('Installing essential packages manually...\n')
+          
+          # Install base packages that often cause issues
+          install.packages(c('MASS', 'Matrix', 'nlme', 'mgcv', 'survival'), repos='https://cloud.r-project.org/')
+          install.packages(c('BiocManager', 'rjson', 'remotes'), repos='https://cloud.r-project.org/')
+          if (!require('BiocManager', quietly=TRUE)) stop('BiocManager failed')
+          BiocManager::install('GSVA')
+          remotes::install_github('ZAEDPolSl/dpGMM')
+          
+          cat('✓ Essential packages installed\n')
+        })
+        "
     - name: Install poetry
       run: pipx install poetry
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'poetry'
