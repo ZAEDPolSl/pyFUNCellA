@@ -33,7 +33,7 @@ def gene2path(
     genesets: Dict[str, List[str]],
     genes: Optional[List[str]] = None,
     method: Literal[
-        "CERNO", "MEAN", "BINA", "AUCELL", "JASMINE", "ZSCORE", "SSGSEA", "AUC"
+        "CERNO", "MEAN", "BINA", "AUCELL", "JASMINE", "ZSCORE", "SSGSEA"
     ] = "CERNO",
     filt_cov: float = 0,
     filt_min: int = 15,
