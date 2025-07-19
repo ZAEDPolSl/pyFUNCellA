@@ -1,101 +1,85 @@
-# Build stage - contains all build dependencies
-FROM rocker/r-ver:4.3.3 AS builder
-
-# Install system dependencies needed for building
+FROM rocker/r-ver:4.4.2 AS builder
 RUN apt-get update &&\
     apt-get install -y \
-    python3.10 \
-    python3-pip \
-    python3.10-dev \
-    libgomp1 \
-    gcc \
-    g++ \
+    software-properties-common \
     curl \
     git \
-    ssh \
-    openssl \
-    libssl-dev \
+    gcc \
+    g++ \
+    build-essential \
+    r-base-dev \
+    gfortran \
+    libgomp1 \
+    libgfortran5 \
     libcurl4-openssl-dev \
+    libssl-dev \
     libxml2-dev \
+    libgit2-dev \
+    zlib1g-dev \
+    libjpeg-dev \
+    libpng-dev \
+    libfreetype6-dev \
+    libdeflate-dev \
     libpcre2-dev \
     liblzma-dev \
     libbz2-dev \
     libicu-dev \
-    zlib1g-dev \
     libreadline-dev \
-    build-essential &&\
+    libmagick++-dev \
+    pkg-config \
+    cmake \
+    ssh \
+    openssl &&\
+    add-apt-repository ppa:deadsnakes/ppa &&\
+    apt-get update &&\
+    apt-get install -y \
+    python3.11 \
+    python3.11-dev \
+    python3.11-venv \
+    python3.11-distutils &&\
     rm -rf /var/lib/apt/lists/*
-
-# Set python3.10 as default python3
-RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1 &&\
-    update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1
-
-# Install Poetry
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
+RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.11
+RUN mkdir -p /tmp/R && chmod 777 /tmp/R
+ENV R_LIBS_USER=/usr/local/lib/R/site-library
 ENV POETRY_HOME="/opt/poetry"
-RUN curl -sSL https://install.python-poetry.org | python3 -
+RUN curl -sSL https://install.python-poetry.org | python3.11 -
 ENV PATH="${POETRY_HOME}/bin:${PATH}"
 RUN poetry self add poetry-plugin-export
-
-# Install R packages using renv
 WORKDIR /app
-COPY renv.lock renv/ ./
-RUN R -e "install.packages('renv', repos='https://cloud.r-project.org/')" &&\
-    R -e "renv::restore()" || echo "Warning: Some R packages failed to install"
-
-# Export Python dependencies and install
-COPY pyproject.toml poetry.lock /app/
-RUN poetry export -f requirements.txt --output requirements.txt --with dev &&\
-    pip3 install --upgrade pip setuptools wheel &&\
-    R_HOME=$(R RHOME) pip3 install -r requirements.txt
-
-# Build the package
-COPY README.md /app/
+COPY renv.lock ./
+COPY setup_docker_compatible_renv.R ./
+RUN chmod +x setup_docker_compatible_renv.R && Rscript setup_docker_compatible_renv.R
+COPY pyproject.toml poetry.lock README.md /app/
 COPY enrichment_auc /app/enrichment_auc
+RUN python3.11 -m venv /app/venv &&\
+    . /app/venv/bin/activate &&\
+    pip install --upgrade pip &&\
+    poetry install --only=main,dev
+ENV PATH="/app/venv/bin:$PATH"
 RUN poetry build
 
-# Development stage - includes all development tools
-FROM rocker/r-ver:4.3.3 AS development
-
+FROM rocker/r-ver:4.4.2 AS development
 ENV PYTHONUNBUFFERED=TRUE
 RUN mkdir -p /root/.config/matplotlib &&\
     echo "backend : Agg" > /root/.config/matplotlib/matplotlibrc
-
-# Install runtime dependencies
 RUN apt-get update &&\
     apt-get install -y \
-    python3.10 \
-    python3-pip \
-    libgomp1 \
-    curl \
-    git \
-    ssh \
-    openssl \
-    libssl3 \
-    libcurl4 \
-    libxml2 \
-    libpcre2-8-0 \
-    liblzma5 \
-    libbz2-1.0 \
-    libicu70 \
-    zlib1g \
-    libreadline8 &&\
+    python3.11 \
+    python3.11-venv &&\
     rm -rf /var/lib/apt/lists/*
-
-# Set python3.10 as default python3
-RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1 &&\
-    update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1
-
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
+RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.11
 WORKDIR /app
-
-# Copy R packages and Python dependencies from builder
 COPY --from=builder /usr/local/lib/R/site-library /usr/local/lib/R/site-library
-COPY --from=builder /usr/local/lib/python3.10/dist-packages /usr/local/lib/python3.10/dist-packages
-
-# Copy built package and install
+COPY --from=builder /app/venv /app/venv
+ENV PATH="/app/venv/bin:$PATH"
+ENV R_LIBS_USER=/usr/local/lib/R/site-library
+RUN mkdir -p /usr/local/lib/R/etc
+RUN echo 'options(repos = c(CRAN = "https://cloud.r-project.org/"))' >> /usr/local/lib/R/etc/Rprofile.site
+RUN echo '.libPaths(c("/usr/local/lib/R/site-library", .libPaths()))' >> /usr/local/lib/R/etc/Rprofile.site
 COPY --from=builder /app/dist /app/dist
-RUN pip3 install /app/dist/*.whl
-
-# Copy source code for development
+RUN /app/venv/bin/pip install /app/dist/*.whl
 COPY enrichment_auc /app/enrichment_auc
 COPY test /app/test
 COPY . /app/
