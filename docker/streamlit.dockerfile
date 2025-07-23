@@ -105,8 +105,13 @@ RUN /app/venv/bin/pip install /app/dist/*.whl
 # Install Streamlit and any extra dependencies for the app
 RUN /app/venv/bin/pip install streamlit
 
-COPY streamlit_app.py /app/streamlit_app.py
+
+
+
+# Copy app folder (tab modules) and main app.py
+COPY app/ /app/app/
+COPY app.py /app/app.py
 
 EXPOSE 8501
 
-CMD ["/app/venv/bin/streamlit", "run", "streamlit_app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+CMD ["/app/venv/bin/streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
