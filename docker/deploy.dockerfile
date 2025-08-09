@@ -55,9 +55,9 @@ COPY renv.lock ./
 COPY setup_docker_compatible_renv.R ./
 RUN chmod +x setup_docker_compatible_renv.R && Rscript setup_docker_compatible_renv.R
 
-# Export Python dependencies and install (production only)
+# Export Python dependencies and install
 COPY pyproject.toml poetry.lock /app/
-RUN poetry install --no-interaction --no-root --only main
+RUN poetry install --no-interaction --no-root
 
 # Build the package
 COPY README.md /app/

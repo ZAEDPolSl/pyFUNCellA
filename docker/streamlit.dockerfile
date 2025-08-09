@@ -57,7 +57,7 @@ COPY enrichment_auc /app/enrichment_auc
 RUN python3.11 -m venv /app/venv && \
     . /app/venv/bin/activate && \
     pip install --upgrade pip && \
-    poetry install --only=main
+    poetry install
 ENV PATH="/app/venv/bin:$PATH"
 RUN poetry build
 
