@@ -1,84 +1,140 @@
-import numpy as np
-import plotly.express as px
-from plotly.subplots import make_subplots
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import plotly.colors as pc
+import numpy as np
+import pandas as pd
 
-from enrichment_auc.gmm.thresholds import categorize_by_thresholds
 
+def scatterplot_subplots(
+    x,
+    y,
+    continuous_labels=None,
+    binary_labels=None,
+    ranked_labels=None,
+    title="Pathway name",
+    pas_method="PAS name",
+):
+    has_continuous = continuous_labels is not None
+    has_binary = binary_labels is not None
+    has_ranked = ranked_labels is not None
 
-def clean_up_layout(fig, gs_name, labels_len, embed_name):
-    fig.update_layout(
-        height=1200,
-        width=1000,
-        template="plotly_white",
-        title_text="Visualizations for {}".format(gs_name),
-        legend_tracegroupgap=600 - (labels_len + 1) * 10,
-        legend=dict(yanchor="top", y=1.0),
+    plots = []
+    if has_continuous:
+        plots.append("continuous")
+    if has_binary:
+        plots.append("binary")
+    if has_ranked:
+        plots.append("ranked")
+
+    rows = len(plots)
+    cols = 1
+
+    title_map = {
+        "continuous": "PAS values",
+        "binary": "Significance",
+        "ranked": "Groups",
+    }
+    subplot_titles = [title_map[p] for p in plots]
+    specs = [[{}] for _ in plots]
+
+    fig = make_subplots(
+        rows=rows,
+        cols=cols,
+        specs=specs,
+        subplot_titles=subplot_titles,
+        vertical_spacing=0.12,
     )
-    x_range = fig.full_figure_for_development(warn=False).layout.xaxis.range
-    y_range = fig.full_figure_for_development(warn=False).layout.yaxis.range
-    for i in range(1, 4):
-        fig.update_yaxes(
-            title_text="{} 2".format(embed_name), range=y_range, row=i, col=1
-        )
-    fig.update_xaxes(title_text="{} 1".format(embed_name), range=x_range, row=3, col=1)
-    return fig
 
+    current_row = 1
 
-def prepare_subplot(fig, embed, labels, subplot_name, row):
-    palette = px.colors.qualitative.Bold
-    if np.unique(labels).shape[0] > 11:
-        palette = px.colors.qualitative.Light24
-    for i, label in enumerate(np.unique(labels)):
-        cell_idx = np.where(labels == label)[0]
+    if has_continuous:
         fig.add_trace(
             go.Scatter(
-                x=embed[cell_idx, 0],
-                y=embed[cell_idx, 1],
-                name=str(label),
-                marker=dict(color=palette[i]),
-                legendgroup=subplot_name,
-                legendgrouptitle_text=subplot_name,
+                x=x,
+                y=y,
                 mode="markers",
+                marker=dict(
+                    color=continuous_labels,
+                    colorscale="Viridis",
+                    size=8,
+                    showscale=True,
+                    colorbar=dict(
+                        title=pas_method,
+                        thickness=15,
+                        len=0.3,  # Shortened colorbar length
+                        y=1.0,
+                        yanchor="top",
+                        x=1.07,  # Position right side
+                    ),
+                ),
+                showlegend=False,  # No legend entry for continuous; colorbar used
             ),
-            row=row,
+            row=current_row,
             col=1,
         )
+        current_row += 1
 
-    fig.update_layout(legend=dict(groupclick="toggleitem"))
-    return fig
+    if has_binary:
+        binary_df = pd.DataFrame({"x": x, "y": y, "label": binary_labels})
+        for label, color, name in zip(
+            [0, 1], ["blue", "red"], ["Non significant", "Significant"]
+        ):
+            subset = binary_df[binary_df["label"] == label]
+            fig.add_trace(
+                go.Scatter(
+                    x=subset["x"],
+                    y=subset["y"],
+                    mode="markers",
+                    marker=dict(color=color, size=8),
+                    name=name,
+                    legendgroup="binary",
+                    showlegend=True,
+                ),
+                row=current_row,
+                col=1,
+            )
+        current_row += 1
 
+    if has_ranked:
+        ranked_df = pd.DataFrame({"x": x, "y": y, "label": ranked_labels})
+        unique_ranks = sorted(np.unique(ranked_labels))
+        color_cycle = (
+            pc.qualitative.Plotly
+            * ((len(unique_ranks) // len(pc.qualitative.Plotly)) + 1)
+        )[: len(unique_ranks)]
+        for i, rank in enumerate(unique_ranks):
+            subset = ranked_df[ranked_df["label"] == rank]
+            fig.add_trace(
+                go.Scatter(
+                    x=subset["x"],
+                    y=subset["y"],
+                    mode="markers",
+                    marker=dict(color=color_cycle[i], size=8),
+                    name=f"Group {rank}",
+                    legendgroup="ranked",
+                    showlegend=True,
+                ),
+                row=current_row,
+                col=1,
+            )
+        current_row += 1
 
-def plot_flow(
-    embed, pas, thrs, labels, name, gs_name="", embed_name="", save_dir="plots/"
-):
-    fig = make_subplots(
-        rows=3, cols=1, shared_xaxes=True, shared_yaxes=True, vertical_spacing=0.02
-    )
-
-    fig = prepare_subplot(fig, embed, labels, "Original", 1)
-
-    fig.add_trace(
-        go.Scatter(
-            x=embed[:, 0],
-            y=embed[:, 1],
-            showlegend=False,
-            legendgroup="flow",
-            name=name,
-            marker=dict(
-                color=pas, colorbar=dict(title=name, len=0.25), colorscale="teal"
-            ),
-            mode="markers",
+    fig.update_layout(
+        height=300 * rows,
+        width=750,
+        title_text=title,
+        title_x=0.02,
+        margin=dict(l=80, r=230),  # room on right for colorbar+legend
+        legend=dict(
+            yanchor="top",
+            y=0.65,  # Legend below the colorbar (colorbar y=1 with length=0.3)
+            xanchor="left",
+            x=1.07,  # Align horizontally with colorbar
+            tracegroupgap=230,  # vertical gap between legend groups
+            font=dict(size=12),
+            bgcolor="rgba(0,0,0,0)",  # transparent background
+            borderwidth=0,  # no border
         ),
-        row=2,
-        col=1,
     )
 
-    preds_bin = categorize_by_thresholds(pas, thrs).astype(int)
-    fig = prepare_subplot(fig, embed, preds_bin, "Clustered", 3)
-
-    labels_len = np.unique(labels).shape[0]
-    fig = clean_up_layout(fig, gs_name, labels_len, embed_name)
-    gs_name = gs_name.replace("/", "_")
-    gs_name = gs_name.replace(":", "_")
-    fig.write_html(save_dir + "scatter_{}_{}.html".format(gs_name, name))
+    return fig
