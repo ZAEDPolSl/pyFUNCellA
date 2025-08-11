@@ -53,6 +53,12 @@ def scatterplot_subplots(
                 x=x,
                 y=y,
                 mode="markers",
+                customdata=continuous_labels,
+                hovertemplate="<b>%{fullData.name}</b><br>"
+                + "x: %{x}<br>"
+                + "y: %{y}<br>"
+                + f"{pas_method}: %{{customdata:.3f}}<br>"
+                + "<extra></extra>",
                 marker=dict(
                     color=continuous_labels,
                     colorscale="Viridis",
@@ -120,7 +126,7 @@ def scatterplot_subplots(
         current_row += 1
 
     fig.update_layout(
-        height=300 * rows,
+        height=400 * rows,
         width=750,
         title_text=title,
         title_x=0.02,

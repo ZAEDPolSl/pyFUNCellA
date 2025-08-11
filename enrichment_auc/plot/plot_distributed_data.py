@@ -32,12 +32,13 @@ def plot_pas_distribution(pas_scores, pas_method, pathway_name, threshold, gmm=N
     labels = (pas_scores > threshold).astype(int)
     df = pd.DataFrame({"value": pas_scores, "label": labels})
 
-    # Histogram
+    # Histogram with density normalization
     hist = go.Histogram(
         x=df["value"],
         marker_color="lightgrey",
         opacity=0.75,
         nbinsx=30,
+        histnorm="probability density",  # Normalize to density
         showlegend=False,
     )
 
@@ -65,25 +66,25 @@ def plot_pas_distribution(pas_scores, pas_method, pathway_name, threshold, gmm=N
 
     fig = go.Figure(data=[hist, rug0, rug1])
 
-    # Histogram stats for scaling GMM
-    counts, bin_edges = np.histogram(df["value"], bins=int(np.sqrt(df.shape[0])))
+    # Calculate density histogram stats for y-axis scaling
+    counts, bin_edges = np.histogram(df["value"], bins=30, density=True)
     hist_ymax = counts.max()
-    bin_width = bin_edges[1] - bin_edges[0]
 
     # Overlay GMM if provided (from GMMdecomp)
     if gmm is not None and isinstance(gmm, dict):
-        x = np.linspace(df["value"].min() - 1, df["value"].max() + 1, 1000)
+        # Limit x-range to actual data range
+        data_min, data_max = df["value"].min(), df["value"].max()
+        x = np.linspace(data_min, data_max, 1000)
         alpha = np.asarray(gmm.get("alpha", []))
         mu = np.asarray(gmm.get("mu", []))
         sigma = np.asarray(gmm.get("sigma", []))
         n_comp = len(alpha)
         for i in range(n_comp):
             pdf = alpha[i] * norm.pdf(x, mu[i], sigma[i])
-            scaled_pdf = pdf * len(df) * bin_width
             fig.add_trace(
                 go.Scatter(
                     x=x,
-                    y=scaled_pdf,
+                    y=pdf,
                     mode="lines",
                     line=dict(width=2, dash="dot"),
                     name=f"GMM comp. {i+1}",
@@ -118,7 +119,7 @@ def plot_pas_distribution(pas_scores, pas_method, pathway_name, threshold, gmm=N
     fig.update_layout(
         title=pathway_name,
         xaxis_title=pas_method,
-        yaxis_title="Cell count",
+        yaxis_title="Density",
         template="simple_white",
         font=dict(family="Arial", size=14),
         bargap=0.05,
