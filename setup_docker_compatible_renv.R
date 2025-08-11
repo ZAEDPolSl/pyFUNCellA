@@ -20,6 +20,11 @@ if (file.exists("renv.lock")) {
     renv::restore(confirm = FALSE)
 
     cat("✓ renv restore completed\n")
+    # Set Bioconductor version for R 4.4
+    if (!requireNamespace("BiocManager", quietly = TRUE)) {
+        install.packages("BiocManager", repos = "https://cran.r-project.org")
+    }
+    BiocManager::install(version = "3.20", ask = FALSE, update = TRUE)
 } else {
     cat("No renv.lock found, setting up fresh renv environment...\n")
     renv::init(bare = TRUE)
@@ -41,6 +46,11 @@ if (file.exists("renv.lock")) {
     # Create snapshot
     cat("Creating renv snapshot...\n")
     renv::snapshot()
+    # Set Bioconductor version for R 4.4
+    if (!requireNamespace("BiocManager", quietly = TRUE)) {
+        install.packages("BiocManager", repos = "https://cran.r-project.org")
+    }
+    BiocManager::install(version = "3.20", ask = FALSE, update = TRUE)
 }
 
 # Now copy packages from renv library to site-library for Docker multi-stage
