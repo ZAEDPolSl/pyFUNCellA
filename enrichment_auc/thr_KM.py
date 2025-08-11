@@ -3,14 +3,14 @@ Thresholding pathway activity scores using k-means clustering.
 Based on the FUNCellA R package thr_KM.R implementation.
 """
 
-from typing import Optional, Union
+from typing import Optional, Union, Callable
 
 import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
-from tqdm import tqdm
 
 from enrichment_auc.utils.optimize_clusters import find_optimal_clusters
+from enrichment_auc.utils.progress_callbacks import get_progress_callback
 
 
 def thr_KM(
@@ -18,6 +18,7 @@ def thr_KM(
     K: int = 10,
     random_state: Optional[int] = 42,
     verbose: bool = True,
+    progress_callback: Optional[Callable] = None,
 ) -> Union[np.ndarray, pd.DataFrame]:
     """
     Threshold pathway activity scores using k-means clustering.
@@ -68,24 +69,27 @@ def thr_KM(
     if n_samples < 2:
         raise ValueError("Need at least 2 samples for clustering")
 
-    # Initialize result matrix
+    # Initialize result matrices
     result = np.zeros_like(values, dtype=int)
+    cluster_assignments = np.zeros_like(values, dtype=int)
 
-    # Process each pathway (row) with progress bar
-    pathway_iterator = tqdm(
-        range(n_pathways),
-        desc="Processing pathways",
+    # Process each pathway (row) with progress reporting
+    progress_cb = get_progress_callback(
+        progress_callback,
+        description="Processing pathways",
         unit="pathway",
-        disable=not verbose,
+        verbose=verbose,
     )
 
-    for i in pathway_iterator:
+    for i in range(n_pathways):
+        progress_cb(i + 1, n_pathways, f"pathway {i + 1}")
 
         # Get pathway activity scores for current pathway
         sample_values = values[i, :]
 
         if len(np.unique(sample_values)) == 1:
             result[i, :] = 1
+            cluster_assignments[i, :] = 0
             continue
 
         if n_samples < K:
@@ -102,19 +106,33 @@ def thr_KM(
         if best_k == 1:
             # Only one cluster, mark all as active
             result[i, :] = 1
+            cluster_assignments[i, :] = 0
         else:
             kmeans = KMeans(n_clusters=best_k, random_state=random_state, n_init=10)
             sample_matrix = sample_values.reshape(-1, 1)
             cluster_labels = kmeans.fit_predict(sample_matrix)
 
-            # Find the cluster with the highest mean activity
+            # Sort clusters by mean activity and relabel
             cluster_centers = kmeans.cluster_centers_.flatten()
-            most_active_cluster = np.argmax(cluster_centers)
+            sorted_idx = np.argsort(cluster_centers)
+            relabel_map = {old: new for new, old in enumerate(sorted_idx)}
+            relabeled_clusters = np.vectorize(lambda x: relabel_map[x])(cluster_labels)
+            cluster_assignments[i, :] = relabeled_clusters
 
-            # Mark samples in the most active cluster as 1
-            result[i, cluster_labels == most_active_cluster] = 1
+            # Find the cluster with the highest mean activity (now the last label)
+            most_active_cluster = best_k - 1
+            result[i, relabeled_clusters == most_active_cluster] = 1
 
     if is_dataframe:
-        return pd.DataFrame(result, index=index, columns=columns)
+        # Create DataFrame with binary and cluster columns
+        binary_df = pd.DataFrame(result, index=index, columns=columns)
+        cluster_df = pd.DataFrame(cluster_assignments, index=index, columns=columns)
+        # Suffix columns for clarity
+        binary_df.columns = [f"{col}_binary" for col in binary_df.columns]
+        cluster_df.columns = [f"{col}_cluster" for col in cluster_df.columns]
+        combined_df = pd.concat([binary_df, cluster_df], axis=1)
+        return combined_df
     else:
-        return result
+        # For ndarray, concatenate binary and cluster assignments along columns
+        combined = np.concatenate([result, cluster_assignments], axis=1)
+        return combined

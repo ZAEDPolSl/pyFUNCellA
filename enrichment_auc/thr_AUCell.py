@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+from typing import Optional, Callable
+from enrichment_auc.utils.progress_callbacks import get_progress_callback
 
 try:
     import rpy2.robjects as robjects
@@ -11,7 +13,12 @@ except ImportError:
     RPY2_AVAILABLE = False
 
 
-def thr_AUCell(df_path, pathway_names=None, sample_names=None):
+def thr_AUCell(
+    df_path,
+    pathway_names=None,
+    sample_names=None,
+    progress_callback: Optional[Callable] = None,
+):
     """
     Calculate activity thresholds for pathways using AUCell's thresholding algorithm.
 
@@ -23,6 +30,9 @@ def thr_AUCell(df_path, pathway_names=None, sample_names=None):
         Names for pathways (rows). Used if df_path is numpy array.
     sample_names : list, optional
         Names for samples (columns). Used if df_path is numpy array.
+    progress_callback : callable, optional
+        Optional callback function for progress reporting.
+        Should accept (current, total, message) parameters.
 
     Returns
     -------
@@ -59,8 +69,19 @@ def thr_AUCell(df_path, pathway_names=None, sample_names=None):
     r_auc_threshold_single = robjects.globalenv["auc_threshold_single"]
 
     thresholds = {}
+    pathway_list = list(df.index)
+    total_pathways = len(pathway_list)
+
+    progress_cb = get_progress_callback(
+        progress_callback,
+        description="Calculating AUCell thresholds",
+        unit="pathway",
+        verbose=True,
+    )
+
     with localconverter(robjects.default_converter + pandas2ri.converter):
-        for pathway in df.index:
+        for i, pathway in enumerate(pathway_list):
+            progress_cb(i + 1, total_pathways, f"threshold {pathway}")
             # Pass as matrix (1 row, n_samples columns)
             scores_matrix = pd.DataFrame([df.loc[pathway].values], columns=df.columns)
             r_matrix = robjects.conversion.py2rpy(scores_matrix)
