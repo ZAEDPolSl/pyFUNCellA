@@ -49,7 +49,7 @@ def _process_pathway_threshold(gmm):
     # Handle both old format (thresholds array) and new format (single threshold)
     thrs = gmm.get("thresholds")  # Old format for backward compatibility
     single_thr = gmm.get("threshold")  # New format from GMMdecomp
-    
+
     if thrs is not None:
         # Old format: multiple thresholds as array
         thrs = np.asarray(thrs, dtype=float)
@@ -64,9 +64,9 @@ def _process_pathway_threshold(gmm):
     else:
         # No thresholds available
         thrs_clean = np.array([])
-    
+
     model = gmm.get("model", {})
-    
+
     # Top1 threshold: max of cleaned thresholds, fallback to nan if empty
     Top1_thr = np.nanmax(thrs_clean) if thrs_clean.size > 0 else float("nan")
     All_thr = thrs_clean.tolist()
@@ -75,7 +75,7 @@ def _process_pathway_threshold(gmm):
     mu = np.asarray(model.get("mu", []))
     sigma = np.asarray(model.get("sigma", []))
     alpha = np.asarray(model.get("alpha", []))
-    
+
     # Kmeans threshold logic
     if thrs_clean.size > 0:
         n_components = mu.size

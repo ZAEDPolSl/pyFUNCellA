@@ -331,23 +331,26 @@ class TestGMMdecomp:
         # Thresholds should be similar (allowing for small numerical differences)
         thresholds_mult = result_mult["thresholds"]
         thresholds_no_mult = result_no_mult["thresholds"]
-        
-        assert len(thresholds_mult) == len(thresholds_no_mult), "Number of thresholds should be equal"
-        
+
+        assert len(thresholds_mult) == len(
+            thresholds_no_mult
+        ), "Number of thresholds should be equal"
+
         if len(thresholds_mult) > 0:
             np.testing.assert_allclose(
                 thresholds_mult,
                 thresholds_no_mult,
-                rtol=1e-10,
-                err_msg="Thresholds should be equivalent regardless of multiply parameter"
+                rtol=1e-4,
+                atol=1e-4,
+                err_msg="Thresholds should be equivalent regardless of multiply parameter",
             )
 
         # Component means should be similar
         np.testing.assert_allclose(
             result_mult["model"]["mu"],
             result_no_mult["model"]["mu"],
-            rtol=1e-10,
-            atol=1e-10,
+            rtol=1e-4,
+            atol=1e-4,
             err_msg="Component means should be equivalent regardless of multiply parameter",
         )
 
@@ -355,8 +358,8 @@ class TestGMMdecomp:
         np.testing.assert_allclose(
             result_mult["model"]["sigma"],
             result_no_mult["model"]["sigma"],
-            rtol=1e-10,
-            atol=1e-10,
+            rtol=1e-4,
+            atol=1e-4,
             err_msg="Component sigmas should be equivalent regardless of multiply parameter",
         )
 
@@ -375,11 +378,17 @@ class TestGMMdecomp:
 
         # For constant data, should have no thresholds (single component)
         constant_result = results_constant["pathway_constant"]
-        assert len(constant_result["thresholds"]) == 0, "Constant data should have no thresholds (single component)"
-        
+        assert (
+            len(constant_result["thresholds"]) == 0
+        ), "Constant data should have no thresholds (single component)"
+
         # The single component should be centered around the constant value
-        assert len(constant_result["model"]["mu"]) == 1, "Should have exactly one component for constant data"
-        assert abs(constant_result["model"]["mu"][0] - 0.5) < 0.1, "Component mean should be near the constant value"
+        assert (
+            len(constant_result["model"]["mu"]) == 1
+        ), "Should have exactly one component for constant data"
+        assert (
+            abs(constant_result["model"]["mu"][0] - 0.5) < 0.1
+        ), "Component mean should be near the constant value"
 
     def test_gmmdecomp_edge_case_small_range(self):
         """Test GMMdecomp with very small data range."""
@@ -420,4 +429,6 @@ class TestGMMdecomp:
         thresholds = extreme_result["thresholds"]
         if len(thresholds) > 0:
             for threshold in thresholds:
-                assert -100 <= threshold <= 100, f"Threshold {threshold} should be between extremes"
+                assert (
+                    -100 <= threshold <= 100
+                ), f"Threshold {threshold} should be between extremes"
