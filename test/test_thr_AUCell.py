@@ -1,27 +1,20 @@
 import numpy as np
 import pandas as pd
 import pytest
-from enrichment_auc.thr_AUCell import thr_AUCell
 
-from rpy2.robjects.packages import importr
-from rpy2.robjects import r
+from enrichment_auc.thr_AUCell import thr_AUCell, _check_aucell_installed
+from enrichment_auc.utils.r_executor import check_r_available
 
 
 class TestThrAUCell:
     def test_r_available(self):
-        # Test that R is available through rpy2
-        try:
-            r_version = r("R.version")
-            assert r_version is not None
-        except Exception:
-            pytest.skip("R is not available through rpy2")
+        # Test that R is available through process-based execution
+        if not check_r_available():
+            pytest.skip("R is not available")
 
     def test_aucell_installed(self):
         # Test that AUCell package is installed in R
-        try:
-            aucell = importr("AUCell")
-            assert aucell is not None
-        except Exception:
+        if not _check_aucell_installed():
             pytest.skip("AUCell R package is not installed")
 
     """Test class for thr_AUCell functionality."""

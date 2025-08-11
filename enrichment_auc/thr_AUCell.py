@@ -1,16 +1,29 @@
 import numpy as np
 import pandas as pd
-from typing import Optional, Callable
+from typing import Optional, Callable, Union, Dict, Any
 from enrichment_auc.utils.progress_callbacks import get_progress_callback
+from .utils.r_executor import execute_r_code, check_r_available, RProcessError
 
-try:
-    import rpy2.robjects as robjects
-    from rpy2.robjects import pandas2ri
-    from rpy2.robjects.conversion import localconverter
 
-    RPY2_AVAILABLE = True
-except ImportError:
-    RPY2_AVAILABLE = False
+def _check_aucell_installed() -> bool:
+    """Check if AUCell package is installed in R."""
+    if not check_r_available():
+        return False
+    try:
+        result = execute_r_code(
+            """
+        tryCatch({
+            library(AUCell)
+            success <- TRUE
+        }, error = function(e) {
+            success <- FALSE
+        })
+        success
+        """
+        )
+        return result.get("success", False)
+    except Exception:
+        return False
 
 
 def thr_AUCell(
@@ -39,8 +52,12 @@ def thr_AUCell(
     dict
         Dictionary mapping pathway names to threshold activity score.
     """
-    if not RPY2_AVAILABLE:
-        raise ImportError("rpy2 is required for AUCell thresholding.")
+    if not check_r_available():
+        raise RuntimeError("R is not available")
+
+    if not _check_aucell_installed():
+        raise RuntimeError("AUCell package is not installed in R")
+
     # Convert input to DataFrame if needed
     if isinstance(df_path, np.ndarray):
         n_pathways, n_samples = df_path.shape
@@ -48,6 +65,7 @@ def thr_AUCell(
             pathway_names = [f"pathway_{i}" for i in range(n_pathways)]
         if sample_names is None:
             sample_names = [f"sample_{i}" for i in range(n_samples)]
+        sample_names = [f"sample_{i}" for i in range(n_samples)]
         df = pd.DataFrame(df_path, index=pathway_names, columns=sample_names)
     else:
         df = df_path.copy()
@@ -55,36 +73,62 @@ def thr_AUCell(
             df = df.copy()
             df.index = pd.Index([f"pathway_{i}" for i in range(df.shape[0])])
 
-    # Define R function for AUCell thresholding (single pathway)
+    # R code for AUCell thresholding (single pathway)
     r_code = """
-    auc_threshold_single <- function(scores) {
-        suppressMessages({
-            library(AUCell)
-        })
-        res <- AUCell:::.auc_assignmnetThreshold_v6(as.matrix(scores), plotHist=FALSE)
-        return(res$selected)
+    # Load required libraries
+    suppressMessages({
+        library(AUCell)
+    })
+    
+    # Get the single pathway data
+    pathway_data <- pathway_scores
+    
+    # Convert to matrix and ensure proper format
+    pathway_matrix <- as.matrix(pathway_data)
+    
+    # Use the exact same approach as FUNCellA
+    # AUCell:::.auc_assignmnetThreshold_v6(as.matrix(df_path[i,]),plotHist = F)$selected
+    result_obj <- AUCell:::.auc_assignmnetThreshold_v6(pathway_matrix, plotHist = FALSE)
+    
+    # Extract the selected threshold
+    if (!is.null(result_obj) && !is.null(result_obj$selected)) {
+        aucell_results <- result_obj$selected
+    } else {
+        aucell_results <- result_obj
     }
     """
-    robjects.r(r_code)
-    r_auc_threshold_single = robjects.globalenv["auc_threshold_single"]
 
-    thresholds = {}
-    pathway_list = list(df.index)
-    total_pathways = len(pathway_list)
+    try:
+        if progress_callback:
+            progress_callback(0, len(df), "Starting AUCell threshold calculation")
 
-    progress_cb = get_progress_callback(
-        progress_callback,
-        description="Calculating AUCell thresholds",
-        unit="pathway",
-        verbose=True,
-    )
+        thresholds = {}
 
-    with localconverter(robjects.default_converter + pandas2ri.converter):
-        for i, pathway in enumerate(pathway_list):
-            progress_cb(i + 1, total_pathways, f"threshold {pathway}")
-            # Pass as matrix (1 row, n_samples columns)
-            scores_matrix = pd.DataFrame([df.loc[pathway].values], columns=df.columns)
-            r_matrix = robjects.conversion.py2rpy(scores_matrix)
-            thr = r_auc_threshold_single(r_matrix)[0]
-            thresholds[pathway] = thr
-    return thresholds
+        # Process each pathway individually for proper progress reporting
+        for i, (pathway_name, pathway_data) in enumerate(df.iterrows()):
+            if progress_callback:
+                progress_callback(i, len(df), f"Processing {pathway_name}")
+
+            # Prepare single pathway data for R
+            pathway_df = pd.DataFrame([pathway_data], index=[pathway_name])
+            data_inputs = {"pathway_scores": pathway_df}
+
+            # Execute R code for this pathway
+            result = execute_r_code(r_code, data_inputs)
+
+            if result.get("success", False):
+                threshold_value = result.get("aucell_results")
+                if threshold_value is not None:
+                    thresholds[pathway_name] = threshold_value
+            else:
+                print(f"Warning: Failed to calculate threshold for {pathway_name}")
+
+        if progress_callback:
+            progress_callback(
+                len(df), len(df), "AUCell threshold calculation completed"
+            )
+
+        return thresholds
+
+    except Exception as e:
+        raise RProcessError(f"AUCell threshold calculation failed: {str(e)}")
