@@ -76,8 +76,8 @@ class TestGMMdecomp:
                 "model" in result
             ), f"Result for {pathway_name} should have 'model' key"
             assert (
-                "threshold" in result
-            ), f"Result for {pathway_name} should have 'threshold' key"
+                "thresholds" in result
+            ), f"Result for {pathway_name} should have 'thresholds' key"
 
             # Check model structure
             model = result["model"]
@@ -99,10 +99,10 @@ class TestGMMdecomp:
                 model["sigma"], np.ndarray
             ), f"Sigma for {pathway_name} should be numpy array"
 
-            # Check threshold is a float
+            # Check thresholds is a numpy array
             assert isinstance(
-                result["threshold"], float
-            ), f"Threshold for {pathway_name} should be a float"
+                result["thresholds"], np.ndarray
+            ), f"Thresholds for {pathway_name} should be numpy array"
 
             # Check that all model components have the same length
             assert len(model["alpha"]) == len(
@@ -142,25 +142,29 @@ class TestGMMdecomp:
         bimodal_data = test_data.loc["pathway_bimodal"]
         unimodal_data = test_data.loc["pathway_unimodal"]
 
-        # For bimodal data, threshold should be within extended range
+        # For bimodal data, check thresholds if any exist
         bimodal_range = bimodal_data.max() - bimodal_data.min()
         bimodal_min_extended = bimodal_data.min() - 0.5 * bimodal_range
         bimodal_max_extended = bimodal_data.max() + 0.5 * bimodal_range
 
-        assert (
-            bimodal_min_extended <= bimodal_result["threshold"] <= bimodal_max_extended
-        ), f"Bimodal threshold {bimodal_result['threshold']} should be within extended range [{bimodal_min_extended}, {bimodal_max_extended}]"
+        bimodal_thresholds = bimodal_result["thresholds"]
+        if len(bimodal_thresholds) > 0:
+            for threshold in bimodal_thresholds:
+                assert (
+                    bimodal_min_extended <= threshold <= bimodal_max_extended
+                ), f"Bimodal threshold {threshold} should be within extended range [{bimodal_min_extended}, {bimodal_max_extended}]"
 
-        # For unimodal data, threshold should be within extended range
+        # For unimodal data, check thresholds if any exist
         unimodal_range = unimodal_data.max() - unimodal_data.min()
         unimodal_min_extended = unimodal_data.min() - 0.5 * unimodal_range
         unimodal_max_extended = unimodal_data.max() + 0.5 * unimodal_range
 
-        assert (
-            unimodal_min_extended
-            <= unimodal_result["threshold"]
-            <= unimodal_max_extended
-        ), f"Unimodal threshold {unimodal_result['threshold']} should be within extended range [{unimodal_min_extended}, {unimodal_max_extended}]"
+        unimodal_thresholds = unimodal_result["thresholds"]
+        if len(unimodal_thresholds) > 0:
+            for threshold in unimodal_thresholds:
+                assert (
+                    unimodal_min_extended <= threshold <= unimodal_max_extended
+                ), f"Unimodal threshold {threshold} should be within extended range [{unimodal_min_extended}, {unimodal_max_extended}]"
 
         # Check that component means are reasonable
         for pathway_name, result in results.items():
@@ -325,9 +329,18 @@ class TestGMMdecomp:
         result_no_mult = results_no_multiply["pathway_test"]
 
         # Thresholds should be similar (allowing for small numerical differences)
-        assert (
-            abs(result_mult["threshold"] - result_no_mult["threshold"]) < 1e-10
-        ), "Thresholds should be equivalent regardless of multiply parameter"
+        thresholds_mult = result_mult["thresholds"]
+        thresholds_no_mult = result_no_mult["thresholds"]
+        
+        assert len(thresholds_mult) == len(thresholds_no_mult), "Number of thresholds should be equal"
+        
+        if len(thresholds_mult) > 0:
+            np.testing.assert_allclose(
+                thresholds_mult,
+                thresholds_no_mult,
+                rtol=1e-10,
+                err_msg="Thresholds should be equivalent regardless of multiply parameter"
+            )
 
         # Component means should be similar
         np.testing.assert_allclose(
@@ -360,9 +373,13 @@ class TestGMMdecomp:
         assert len(results_constant) == 1
         assert "pathway_constant" in results_constant
 
-        # Threshold should be around the constant value
+        # For constant data, should have no thresholds (single component)
         constant_result = results_constant["pathway_constant"]
-        assert abs(constant_result["threshold"] - 0.5) < 0.1
+        assert len(constant_result["thresholds"]) == 0, "Constant data should have no thresholds (single component)"
+        
+        # The single component should be centered around the constant value
+        assert len(constant_result["model"]["mu"]) == 1, "Should have exactly one component for constant data"
+        assert abs(constant_result["model"]["mu"][0] - 0.5) < 0.1, "Component mean should be near the constant value"
 
     def test_gmmdecomp_edge_case_small_range(self):
         """Test GMMdecomp with very small data range."""
@@ -398,6 +415,9 @@ class TestGMMdecomp:
         assert len(results_extreme) == 1
         assert "pathway_extreme" in results_extreme
 
-        # Threshold should be somewhere between the extremes
+        # Thresholds should be somewhere between the extremes if any exist
         extreme_result = results_extreme["pathway_extreme"]
-        assert -100 <= extreme_result["threshold"] <= 100
+        thresholds = extreme_result["thresholds"]
+        if len(thresholds) > 0:
+            for threshold in thresholds:
+                assert -100 <= threshold <= 100, f"Threshold {threshold} should be between extremes"

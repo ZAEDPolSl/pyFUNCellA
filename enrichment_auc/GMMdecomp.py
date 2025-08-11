@@ -7,7 +7,7 @@ originally implemented in R using the dpGMM package.
 
 import numpy as np
 import pandas as pd
-from typing import Dict, Any, Union
+from typing import Dict, Any, Union, Optional, Callable
 
 try:
     import rpy2.robjects as robjects
@@ -107,7 +107,7 @@ def GMMdecomp(
         Dictionary of GMM decomposition results for each pathway.
         Keys are pathway names, values are dictionaries containing:
         - 'model': Fitted GMM model parameters (mixture weights, means, and standard deviations)
-        - 'threshold': Decision threshold calculated by the model
+        - 'thresholds': Array of decision thresholds calculated by the model
         - Other diagnostics from dpGMM package
 
     Raises
@@ -233,7 +233,7 @@ def GMMdecomp(
                 "mu": np.array([mean_value]),
                 "sigma": np.array([std_value]),
             },
-            "threshold": mean_value,
+            "thresholds": np.array([]),  # No thresholds for single component
             "IC_value": 0.0 if std_value == 0 else None,
             "converged": True,
         }
@@ -260,13 +260,22 @@ def GMMdecomp(
         model_mu = safe_extract(model, "mu", np.array([]), np.array)
         model_sigma = safe_extract(model, "sigma", np.array([]), np.array)
 
-        # Extract threshold
-        threshold = safe_extract(
+        # Extract thresholds (can be multiple values)
+        thresholds_raw = safe_extract(
             pathway_result,
             "threshold",
-            0.0,
-            lambda x: float(x[0]) if hasattr(x, "__getitem__") else float(x),
+            np.array([]),
+            lambda x: np.array(x) if hasattr(x, "__iter__") and not isinstance(x, str) else np.array([float(x)]),
         )
+        
+        # Convert to numpy array and handle empty case
+        if isinstance(thresholds_raw, (list, tuple)):
+            thresholds = np.array(thresholds_raw, dtype=float)
+        elif isinstance(thresholds_raw, np.ndarray):
+            thresholds = thresholds_raw.astype(float)
+        else:
+            # Single value case
+            thresholds = np.array([float(thresholds_raw)]) if thresholds_raw is not None else np.array([])
 
         # Scale back if multiply was used
         if multiply:
@@ -274,8 +283,8 @@ def GMMdecomp(
                 model_mu = model_mu / 10
             if model_sigma is not None and len(model_sigma) > 0:
                 model_sigma = model_sigma / 10
-            if threshold is not None:
-                threshold = threshold / 10
+            if len(thresholds) > 0:
+                thresholds = thresholds / 10
 
         return {
             "model": {
@@ -283,7 +292,7 @@ def GMMdecomp(
                 "mu": model_mu,
                 "sigma": model_sigma,
             },
-            "threshold": threshold,
+            "thresholds": thresholds,
             "IC_value": safe_extract(pathway_result, "IC", None, lambda x: float(x[0])),
             "converged": safe_extract(
                 pathway_result, "converged", None, lambda x: bool(x[0])
@@ -293,6 +302,9 @@ def GMMdecomp(
     # Process pathways and separate constant from non-constant
     results = {}
     non_constant_pathways = []
+
+    if verbose:
+        print("Preprocessing pathways...")
 
     for pathway_name in X_scaled.index:
         pathway_data = X_scaled.loc[pathway_name].values.astype(float)
@@ -306,12 +318,20 @@ def GMMdecomp(
     if not non_constant_pathways:
         return results
 
+    if verbose:
+        print(
+            f"Running GMM decomposition on {len(non_constant_pathways)} non-constant pathways..."
+        )
+
     # Process non-constant pathways through R
     X_for_r = X_scaled.loc[non_constant_pathways]
 
     with localconverter(robjects.default_converter + pandas2ri.converter):
         r_X = robjects.conversion.py2rpy(X_for_r)
         r_results = r_gmmdecomp(r_X, K=K, IC=IC)
+
+    if verbose:
+        print("Processing results...")
 
     # Process R results
     for pathway_name in non_constant_pathways:
