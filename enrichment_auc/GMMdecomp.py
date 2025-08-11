@@ -100,6 +100,7 @@ def GMMdecomp(
     IC: str = "BIC",
     parallel: bool = False,
     verbose: bool = True,
+    progress_callback: Optional[Callable] = None,
 ) -> Dict[str, Any]:
     """
     Perform Gaussian Mixture Model (GMM) decomposition on pathway enrichment scores.
@@ -124,6 +125,9 @@ def GMMdecomp(
         Note: Parallel execution is not yet implemented.
     verbose : bool, default=True
         Whether to show progress messages.
+    progress_callback : callable, optional
+        Optional callback function for progress reporting.
+        Should accept (current, total, message) parameters.
 
     Returns
     -------
@@ -227,24 +231,103 @@ def GMMdecomp(
             print("All pathways contain constant data. Returning simple results.")
         return results
 
-    # Filter data for R processing to only non-constant pathways
-    X_for_r = X_for_r.loc[non_constant_pathways]
-
     if verbose:
         print(
             f"Processing {len(non_constant_pathways)} non-constant pathways through R..."
         )
 
-    # Prepare data for R
-    data_inputs = {
-        "X_data": X_for_r,
-        "K_param": K,
-        "IC_param": IC,
-        "verbose_param": verbose,
-    }
+    # Process pathways individually to avoid timeout and provide progress updates
+    if progress_callback:
+        progress_callback(
+            0, len(non_constant_pathways), "Starting GMM decomposition..."
+        )
 
-    # R code for GMM decomposition
-    r_code = """
+    for i, pathway_name in enumerate(non_constant_pathways):
+        if progress_callback:
+            progress_callback(
+                i, len(non_constant_pathways), f"Processing {pathway_name}"
+            )
+
+        if verbose:
+            print(
+                f"Processing pathway {i+1}/{len(non_constant_pathways)}: {pathway_name}"
+            )
+
+        # Get single pathway data
+        single_pathway_data = X_for_r.loc[[pathway_name]]
+
+        # Prepare data for R (single pathway)
+        data_inputs = {
+            "X_data": single_pathway_data,
+            "K_param": K,
+            "IC_param": IC,
+            "verbose_param": False,  # Reduce R verbosity for individual pathways
+        }
+
+        try:
+            # Execute R code for single pathway
+            result = execute_r_code(_get_gmm_r_code(), data_inputs)
+
+            if not result.get("success", False):
+                if verbose:
+                    print(f"Warning: GMM failed for pathway {pathway_name}")
+                # Create failed result structure
+                results[pathway_name] = {
+                    "model": {
+                        "alpha": np.array([]),
+                        "mu": np.array([]),
+                        "sigma": np.array([]),
+                    },
+                    "thresholds": np.array([]),
+                    "K": 0,
+                    "IC": float("inf"),
+                    "loglik": float("-inf"),
+                    "cluster": np.array([]),
+                }
+                continue
+
+            # Extract and process results for this pathway
+            gmm_results = result.get("gmm_results", {})
+
+            if pathway_name in gmm_results:
+                pathway_result = gmm_results[pathway_name]
+                if isinstance(pathway_result, dict) and pathway_result.get(
+                    "success", False
+                ):
+                    # Process successful result
+                    results[pathway_name] = _process_single_pathway_result(
+                        pathway_result, multiply
+                    )
+                else:
+                    # Handle failed pathway
+                    results[pathway_name] = _create_failed_result()
+            else:
+                results[pathway_name] = _create_failed_result()
+
+        except Exception as e:
+            if verbose:
+                print(f"Error processing pathway {pathway_name}: {str(e)}")
+            results[pathway_name] = _create_failed_result()
+
+    if progress_callback:
+        progress_callback(
+            len(non_constant_pathways),
+            len(non_constant_pathways),
+            "GMM decomposition completed",
+        )
+
+    if verbose:
+        successful_pathways = sum(1 for r in results.values() if r.get("K", 0) > 0)
+        print(
+            f"GMM decomposition completed: {successful_pathways}/{len(results)} pathways successful"
+        )
+
+    return results
+
+
+def _get_gmm_r_code():
+    """Get the R code for GMM decomposition as a separate function."""
+    return """
     # Load required libraries
     library(dpGMM)
     library(jsonlite)
@@ -293,20 +376,11 @@ def GMMdecomp(
         return(serializable_result)
     }
     
-    # GMM Calculation for each row
+    # GMM Calculation for each row (should be just one row now)
     results_list <- list()
     total_rows <- nrow(X)
     
-    if (verbose_flag) {
-        cat("Starting GMM decomposition for", total_rows, "pathways...\\n")
-    }
-    
     for (i in 1:total_rows) {
-        # Progress update
-        if (verbose_flag && i %% max(1, floor(total_rows/10)) == 0) {
-            cat("Processing pathway", i, "of", total_rows, "\\n")
-        }
-        
         tryCatch({
             row_result <- row_multiple(X[i, ])
             results_list[[rownames(X)[i]]] <- row_result
@@ -316,10 +390,6 @@ def GMMdecomp(
             }
             results_list[[rownames(X)[i]]] <- list(error = e$message, success = FALSE)
         })
-    }
-    
-    if (verbose_flag) {
-        cat("GMM decomposition completed for", length(results_list), "pathways\\n")
     }
     
     # Use jsonlite to properly serialize the results
@@ -332,113 +402,65 @@ def GMMdecomp(
     })
     """
 
-    try:
-        if verbose:
-            print("Executing GMM decomposition in R...")
 
-        result = execute_r_code(r_code, data_inputs)
+def _process_single_pathway_result(pathway_result, multiply):
+    """Process a single pathway result from R."""
+    # Convert the flat structure from R to nested structure expected by tests
+    alpha = pathway_result.get("alpha", [])
+    mu = pathway_result.get("mu", [])
+    sigma = pathway_result.get("sigma", [])
+    threshold = pathway_result.get("threshold", [])
 
-        if not result.get("success", False):
-            raise RProcessError("GMM decomposition failed in R")
+    # Convert scalars to arrays for consistency
+    if np.isscalar(alpha):
+        alpha = [alpha]
+    if np.isscalar(mu):
+        mu = [mu]
+    if np.isscalar(sigma):
+        sigma = [sigma]
+    if np.isscalar(threshold):
+        threshold = [threshold]
 
-        # Extract results
-        gmm_results = result.get("gmm_results", {})
+    # Unscale values if multiply=True was used
+    if multiply:
+        # Use exact arithmetic to avoid floating point precision issues
+        scaling_factor = 10
+        mu = [m / scaling_factor if isinstance(m, (int, float)) else m for m in mu]
+        sigma = [
+            s / scaling_factor if isinstance(s, (int, float)) else s for s in sigma
+        ]
+        threshold = [
+            t / scaling_factor if isinstance(t, (int, float)) else t for t in threshold
+        ]
 
-        # Handle case where gmm_results might be a list (from R)
-        if isinstance(gmm_results, list):
-            # Convert list to empty dict if it's an empty list
-            if len(gmm_results) == 0:
-                gmm_results = {}
-            else:
-                # This shouldn't happen, but handle gracefully
-                print(
-                    f"Warning: gmm_results is a list with {len(gmm_results)} items, expected dict"
-                )
-                gmm_results = {}
+    return {
+        "model": {
+            "alpha": np.array(alpha),
+            "mu": np.array(mu),
+            "sigma": np.array(sigma),
+        },
+        "thresholds": np.array(threshold),
+        "K": pathway_result.get("K", 1),
+        "IC": pathway_result.get("IC", 0.0),
+        "loglik": pathway_result.get("loglik", 0.0),
+        "cluster": np.array(pathway_result.get("cluster", [])),
+    }
 
-        # Post-process results to match expected structure
-        processed_results = {}
-        for pathway_name, pathway_result in gmm_results.items():
-            if isinstance(pathway_result, dict) and pathway_result.get(
-                "success", False
-            ):
-                # Convert the flat structure from R to nested structure expected by tests
-                # Ensure all components are arrays (handle scalar case)
-                alpha = pathway_result.get("alpha", [])
-                mu = pathway_result.get("mu", [])
-                sigma = pathway_result.get("sigma", [])
-                threshold = pathway_result.get("threshold", [])
 
-                # Convert scalars to arrays for consistency
-                if np.isscalar(alpha):
-                    alpha = [alpha]
-                if np.isscalar(mu):
-                    mu = [mu]
-                if np.isscalar(sigma):
-                    sigma = [sigma]
-                if np.isscalar(threshold):
-                    threshold = [threshold]
-
-                # Unscale values if multiply=True was used
-                if multiply:
-                    # Use exact arithmetic to avoid floating point precision issues
-                    # Unscale mu, sigma and threshold values (alpha doesn't need unscaling as it's proportion)
-                    scaling_factor = 10
-                    mu = [
-                        m / scaling_factor if isinstance(m, (int, float)) else m
-                        for m in mu
-                    ]
-                    sigma = [
-                        s / scaling_factor if isinstance(s, (int, float)) else s
-                        for s in sigma
-                    ]
-                    threshold = [
-                        t / scaling_factor if isinstance(t, (int, float)) else t
-                        for t in threshold
-                    ]
-
-                processed_result = {
-                    "model": {
-                        "alpha": np.array(alpha),
-                        "mu": np.array(mu),
-                        "sigma": np.array(sigma),
-                    },
-                    # Convert 'threshold' (singular) to 'thresholds' (plural)
-                    "thresholds": np.array(threshold),
-                    # Include other metadata
-                    "K": pathway_result.get("K", 1),
-                    "IC": pathway_result.get("IC", 0.0),
-                    "loglik": pathway_result.get("loglik", 0.0),
-                    "cluster": np.array(pathway_result.get("cluster", [])),
-                }
-                processed_results[pathway_name] = processed_result
-            else:
-                # Handle failed cases - still return a valid structure
-                processed_results[pathway_name] = {
-                    "model": {
-                        "alpha": np.array([]),
-                        "mu": np.array([]),
-                        "sigma": np.array([]),
-                    },
-                    "thresholds": np.array([]),
-                    "K": 0,
-                    "IC": float("inf"),
-                    "loglik": float("-inf"),
-                    "cluster": np.array([]),
-                }
-
-        # Merge constant data results with R processing results
-        results.update(processed_results)
-
-        if verbose:
-            print(
-                f"GMM decomposition completed for {len(results)} pathways ({len(processed_results)} processed through R, {len(results) - len(processed_results)} constant data)"
-            )
-
-        return results
-
-    except Exception as e:
-        raise RProcessError(f"GMM decomposition failed: {str(e)}")
+def _create_failed_result():
+    """Create a failed result structure."""
+    return {
+        "model": {
+            "alpha": np.array([]),
+            "mu": np.array([]),
+            "sigma": np.array([]),
+        },
+        "thresholds": np.array([]),
+        "K": 0,
+        "IC": float("inf"),
+        "loglik": float("-inf"),
+        "cluster": np.array([]),
+    }
 
 
 # Legacy function for backwards compatibility
