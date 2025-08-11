@@ -15,11 +15,10 @@ def _run_analysis(genesets, data, genes, method):
     del df
     with open("tmp/genesets_genes.json", "w") as fp:
         json.dump(genesets, fp)
-    rscript = "enrichment_auc/metrics/gsea.R"
+    rscript = os.path.join(os.path.dirname(__file__), "gsea.R")
     outpath = os.getcwd() + "/"
-    cmd = ["Rscript", rscript] + [x for x in [method, outpath]]
-    cmd = " ".join(cmd)
-    subprocess.call(cmd, shell=True)
+    cmd = ["Rscript", rscript, method, outpath]
+    subprocess.call(cmd)
     res = pd.read_csv("tmp/res.csv", index_col=0, header=0)
     shutil.rmtree("tmp")
     return res.to_numpy()
