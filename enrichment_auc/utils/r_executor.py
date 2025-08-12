@@ -3,7 +3,6 @@ Process-based R execution for Streamlit compatibility.
 
 This module provides a process-isolated way to run R code, avoiding the
 threading issues that plague rpy2 in Streamlit environments.
-Uses a simple file-based approach similar to the GSEA module.
 """
 
 import json
@@ -244,7 +243,7 @@ class RProcessExecutor:
                 "  results_list <- list(success = TRUE)",
                 "  ",
                 "  # Look for common result variable names",
-                "  result_vars <- c('gmm_results', 'aucell_results', 'test_result', 'package_results')",
+                "  result_vars <- c('gmm_results', 'aucell_results', 'gsva_results', 'test_result', 'package_results')",
                 "  for (var_name in result_vars) {",
                 "    if (exists(var_name)) {",
                 "      # Try to safely convert complex R objects to JSON-serializable format",

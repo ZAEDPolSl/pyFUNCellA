@@ -73,30 +73,15 @@ def thr_AUCell(
             df = df.copy()
             df.index = pd.Index([f"pathway_{i}" for i in range(df.shape[0])])
 
-    # R code for AUCell thresholding (single pathway)
-    r_code = """
-    # Load required libraries
-    suppressMessages({
-        library(AUCell)
-    })
-    
-    # Get the single pathway data
-    pathway_data <- pathway_scores
-    
-    # Convert to matrix and ensure proper format
-    pathway_matrix <- as.matrix(pathway_data)
-    
-    # Use the exact same approach as FUNCellA
-    # AUCell:::.auc_assignmnetThreshold_v6(as.matrix(df_path[i,]),plotHist = F)$selected
-    result_obj <- AUCell:::.auc_assignmnetThreshold_v6(pathway_matrix, plotHist = FALSE)
-    
-    # Extract the selected threshold
-    if (!is.null(result_obj) && !is.null(result_obj$selected)) {
-        aucell_results <- result_obj$selected
-    } else {
-        aucell_results <- result_obj
-    }
-    """
+    # Get the path to the R script and read it
+    import os
+
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    r_script_path = os.path.join(script_dir, "aucell_threshold.R")
+
+    # Read the R script content
+    with open(r_script_path, "r") as f:
+        r_code = f.read()
 
     try:
         if progress_callback:

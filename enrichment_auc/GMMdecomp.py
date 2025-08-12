@@ -326,90 +326,35 @@ def GMMdecomp(
 
 
 def _get_gmm_r_code():
-    """Get the R code for GMM decomposition as a separate function."""
-    return """
-    # Load required libraries
-    library(dpGMM)
-    library(jsonlite)
-    
-    # Get parameters
-    K <- K_param
-    IC <- IC_param
-    X <- X_data
-    verbose_flag <- verbose_param
-    
-    # GMM options setup
-    opt <- dpGMM::GMM_1D_opts
-    opt$max_iter <- 1000
-    opt$KS <- K
-    opt$plot <- FALSE
-    opt$quick_stop <- FALSE
-    opt$SW <- 0.05
-    opt$sigmas.dev <- 0
-    opt$IC <- IC
-    
-    # Helper function for row calculation that extracts serializable components
-    row_multiple <- function(row) {
-        tmp <- as.numeric(row)
-        result <- dpGMM::runGMM(tmp, opts = opt)
-        
-        # Extract key components that can be serialized based on runGMM structure
-        serializable_result <- list(
-            K = result$KS,  # Number of components
-            IC = result[[IC]],  # Information criterion value
-            loglik = result$logLik,  # Log-likelihood
-            threshold = result$threshold,  # The thresholds we need!
-            cluster = as.vector(result$cluster),  # Cluster assignments
-            mu = result$model$mu,  # Component means
-            sigma = result$model$sigma,  # Component standard deviations
-            alpha = result$model$alpha,  # Component weights (not lambda)
-            success = TRUE
-        )
-        
-        # Handle potential NULL values
-        if (is.null(serializable_result$mu)) serializable_result$mu <- numeric(0)
-        if (is.null(serializable_result$sigma)) serializable_result$sigma <- numeric(0)
-        if (is.null(serializable_result$alpha)) serializable_result$alpha <- numeric(0)
-        if (is.null(serializable_result$threshold)) serializable_result$threshold <- numeric(0)
-        if (is.null(serializable_result$cluster)) serializable_result$cluster <- integer(0)
-        
-        return(serializable_result)
-    }
-    
-    # GMM Calculation for each row (should be just one row now)
-    results_list <- list()
-    total_rows <- nrow(X)
-    
-    for (i in 1:total_rows) {
-        tryCatch({
-            row_result <- row_multiple(X[i, ])
-            results_list[[rownames(X)[i]]] <- row_result
-        }, error = function(e) {
-            if (verbose_flag) {
-                cat("Warning: Failed to process pathway", rownames(X)[i], ":", e$message, "\\n")
-            }
-            results_list[[rownames(X)[i]]] <- list(error = e$message, success = FALSE)
-        })
-    }
-    
-    # Use jsonlite to properly serialize the results
-    tryCatch({
-        # Prepare final results using the expected variable name
-        gmm_results <- results_list
-    }, error = function(e) {
-        cat("Error serializing results:", e$message, "\\n")
-        gmm_results <- list(error = "Serialization failed", details = e$message)
-    })
-    """
+    """Get the R code for GMM decomposition from separate file."""
+    import os
+
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    r_script_path = os.path.join(script_dir, "gmm_decomposition.R")
+
+    # Read the R script content
+    with open(r_script_path, "r") as f:
+        return f.read()
 
 
 def _process_single_pathway_result(pathway_result, multiply):
     """Process a single pathway result from R."""
+
+    # Helper function to handle NA values from R
+    def _clean_r_value(value):
+        """Convert R values, handling NA strings."""
+        if isinstance(value, str) and value.upper() in ["NA", "NAN", "NULL"]:
+            return np.nan
+        elif isinstance(value, (list, tuple)):
+            return [_clean_r_value(v) for v in value]
+        else:
+            return value
+
     # Convert the flat structure from R to nested structure expected by tests
-    alpha = pathway_result.get("alpha", [])
-    mu = pathway_result.get("mu", [])
-    sigma = pathway_result.get("sigma", [])
-    threshold = pathway_result.get("threshold", [])
+    alpha = _clean_r_value(pathway_result.get("alpha", []))
+    mu = _clean_r_value(pathway_result.get("mu", []))
+    sigma = _clean_r_value(pathway_result.get("sigma", []))
+    threshold = _clean_r_value(pathway_result.get("threshold", []))
 
     # Convert scalars to arrays for consistency
     if np.isscalar(alpha):
@@ -421,16 +366,51 @@ def _process_single_pathway_result(pathway_result, multiply):
     if np.isscalar(threshold):
         threshold = [threshold]
 
+    # Filter out NaN values and handle empty results
+    alpha = (
+        [a for a in alpha if not (isinstance(a, float) and np.isnan(a))]
+        if isinstance(alpha, (list, tuple))
+        else ([alpha] if not (isinstance(alpha, float) and np.isnan(alpha)) else [])
+    )
+    mu = (
+        [m for m in mu if not (isinstance(m, float) and np.isnan(m))]
+        if isinstance(mu, (list, tuple))
+        else ([mu] if not (isinstance(mu, float) and np.isnan(mu)) else [])
+    )
+    sigma = (
+        [s for s in sigma if not (isinstance(s, float) and np.isnan(s))]
+        if isinstance(sigma, (list, tuple))
+        else ([sigma] if not (isinstance(sigma, float) and np.isnan(sigma)) else [])
+    )
+    threshold = (
+        [t for t in threshold if not (isinstance(t, float) and np.isnan(t))]
+        if isinstance(threshold, (list, tuple))
+        else (
+            [threshold]
+            if not (isinstance(threshold, float) and np.isnan(threshold))
+            else []
+        )
+    )
+
+    # If we have no valid values, return a failed result
+    if not alpha or not mu or not sigma or not threshold:
+        return _create_failed_result()
+
     # Unscale values if multiply=True was used
     if multiply:
         # Use exact arithmetic to avoid floating point precision issues
         scaling_factor = 10
-        mu = [m / scaling_factor if isinstance(m, (int, float)) else m for m in mu]
+        mu = [
+            m / scaling_factor if isinstance(m, (int, float)) and not np.isnan(m) else m
+            for m in mu
+        ]
         sigma = [
-            s / scaling_factor if isinstance(s, (int, float)) else s for s in sigma
+            s / scaling_factor if isinstance(s, (int, float)) and not np.isnan(s) else s
+            for s in sigma
         ]
         threshold = [
-            t / scaling_factor if isinstance(t, (int, float)) else t for t in threshold
+            t / scaling_factor if isinstance(t, (int, float)) and not np.isnan(t) else t
+            for t in threshold
         ]
 
     return {
@@ -471,93 +451,3 @@ def gmm_decomposition_parallel(*args, **kwargs):
     """
     kwargs.setdefault("parallel", True)
     return GMMdecomp(*args, **kwargs)
-
-
-def validate_gmm_results(results: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Validate and clean GMM decomposition results.
-
-    Parameters
-    ----------
-    results : dict
-        Results from GMMdecomp function
-
-    Returns
-    -------
-    dict
-        Validated and cleaned results
-    """
-    validated = {}
-
-    for pathway, result in results.items():
-        if isinstance(result, dict) and "error" not in result:
-            validated[pathway] = result
-        else:
-            print(f"Warning: Excluding invalid result for pathway {pathway}")
-
-    return validated
-
-
-def extract_thresholds(results: Dict[str, Any]) -> Dict[str, np.ndarray]:
-    """
-    Extract thresholds from GMM decomposition results.
-
-    Parameters
-    ----------
-    results : dict
-        Results from GMMdecomp function
-
-    Returns
-    -------
-    dict
-        Dictionary mapping pathway names to threshold arrays
-    """
-    thresholds = {}
-
-    for pathway, result in results.items():
-        if isinstance(result, dict) and "thresholds" in result:
-            thresholds[pathway] = np.array(result["thresholds"])
-        elif isinstance(result, dict) and "model" in result:
-            # Try to extract thresholds from model if available
-            model = result["model"]
-            if isinstance(model, dict) and "thresholds" in model:
-                thresholds[pathway] = np.array(model["thresholds"])
-
-    return thresholds
-
-
-def summarize_gmm_results(results: Dict[str, Any]) -> pd.DataFrame:
-    """
-    Create a summary DataFrame of GMM decomposition results.
-
-    Parameters
-    ----------
-    results : dict
-        Results from GMMdecomp function
-
-    Returns
-    -------
-    pd.DataFrame
-        Summary DataFrame with pathway statistics
-    """
-    summary_data = []
-
-    for pathway, result in results.items():
-        if isinstance(result, dict) and "error" not in result:
-            row = {"pathway": pathway}
-
-            # Extract basic information
-            if "model" in result:
-                model = result["model"]
-                if isinstance(model, dict):
-                    row["n_components"] = str(len(model.get("weights", [])))
-                    row["converged"] = model.get("converged", False)
-
-            if "thresholds" in result:
-                thresholds = result["thresholds"]
-                if isinstance(thresholds, (list, np.ndarray)):
-                    row["n_thresholds"] = str(len(thresholds))
-
-            summary_data.append(row)
-
-    return pd.DataFrame(summary_data)
