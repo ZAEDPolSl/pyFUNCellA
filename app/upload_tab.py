@@ -3,7 +3,22 @@ import pandas as pd
 import io
 
 
-def upload_tab(default_genesets):
+def load_csv(file):
+    content = file.getvalue().decode()
+    sep = "\t" if "\t" in content.splitlines()[0] else ","
+    lines = content.splitlines()
+    genesets = {}
+    for line in lines:
+        parts = line.strip().split(sep)
+        if len(parts) < 2:
+            continue
+        pathway = parts[0]
+        genes = [g for g in parts[1:] if g]
+        genesets[pathway] = genes
+    return genesets
+
+
+def upload_tab():
     st.header("Step 1: Upload Data and Genesets")
     data_file = st.file_uploader(
         "Upload gene expression data (CSV)", type=["csv"], key="data_file"
@@ -18,6 +33,8 @@ def upload_tab(default_genesets):
     )
 
     if st.button("Upload", key="save_files"):
+        missing = []
+        # Data file check
         if data_file is not None:
             try:
                 st.session_state["data"] = pd.read_csv(data_file, index_col=0)
@@ -28,31 +45,35 @@ def upload_tab(default_genesets):
         else:
             st.session_state["data"] = None
             st.session_state["genes"] = None
-        if geneset_source == "Upload geneset file" and geneset_file is not None:
+            missing.append("gene expression data file")
+        # Genesets check
+        genesets_loaded = False
+        if geneset_source == "Upload genesets file" and geneset_file is not None:
             try:
                 import json
 
                 if geneset_file.name.endswith(".json"):
                     genesets = json.load(io.StringIO(geneset_file.getvalue().decode()))
                 elif geneset_file.name.endswith(".csv"):
-                    df = pd.read_csv(geneset_file)
-                    if df.shape[1] < 2:
-                        raise ValueError(
-                            "Geneset CSV must have at least two columns (pathway, gene)"
-                        )
-                    genesets = (
-                        df.groupby(df.columns[0])[df.columns[1]].apply(list).to_dict()
-                    )
+                    genesets = load_csv(geneset_file)
                 else:
                     raise ValueError(
                         "Unsupported geneset file type. Please upload JSON or CSV."
                     )
                 st.session_state["genesets"] = genesets
                 st.success("Genesets file loaded.")
+                genesets_loaded = True
             except Exception as e:
                 st.error(f"Error loading geneset file: {e}")
         elif geneset_source == "Use default genesets":
-            st.session_state["genesets"] = default_genesets
+            from enrichment_auc import load_pathways
+
+            st.session_state["genesets"] = load_pathways("data")
             st.success("Default genesets selected.")
+            genesets_loaded = True
         else:
             st.session_state["genesets"] = None
+            missing.append("genesets (upload or select default)")
+        # Show info if anything is missing
+        if missing:
+            st.info(f"Please provide: {', '.join(missing)} before proceeding.")
