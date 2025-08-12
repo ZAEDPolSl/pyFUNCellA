@@ -136,7 +136,7 @@ def scatterplot_subplots(
             y=0.65,  # Legend below the colorbar (colorbar y=1 with length=0.3)
             xanchor="left",
             x=1.07,  # Align horizontally with colorbar
-            tracegroupgap=230,  # vertical gap between legend groups
+            tracegroupgap=350,  # vertical gap between legend groups
             font=dict(size=12),
             bgcolor="rgba(0,0,0,0)",  # transparent background
             borderwidth=0,  # no border

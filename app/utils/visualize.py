@@ -105,6 +105,11 @@ def visualize_scatter(
             gmm_groups = np.digitize(pas_scores, sorted_thr)
         else:
             gmm_groups = binary_labels
+
+        # Don't show ranked labels if there are only 2 or fewer groups
+        if gmm_groups is not None and len(np.unique(gmm_groups)) <= 2:
+            gmm_groups = None
+
         fig = scatterplot_subplots(
             x=x,
             y=y,
