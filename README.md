@@ -21,48 +21,50 @@ Implemented thresholding solutions:
 2) k-means
 3) GMM thresholding with Top 1 and k-means adjustment (Zyla et al. 2025?)
 
-## Installation
- For installation, you have several options - you can build it yourself locally, you can use Docker for automatic build. Alternatively, you can use the application - either on your computer or on remote server.
-### Docker (recommended)
+## Installation & Usage
 
-Build and run the deployment container:
+### 🐳 Docker (Recommended)
 
+#### 🚀 Quick Start - Run Pre-built App
 ```bash
-docker build -f docker/deploy.dockerfile -t funcella-deploy .
+# Pull and run the app directly (fastest option)
+docker run -p 8501:8501 amrukwa/funcella:latest
+```
+The app will be available at **http://localhost:8501**
+
+#### 🏗️ Build Locally with Cache (faster builds)
+```bash
+# Use cached builder for faster builds
+docker build -f docker/streamlit.dockerfile --cache-from amrukwa/funcella:builder -t funcella .
+docker run -p 8501:8501 funcella
 ```
 
-### Manual installation
-1. renv (R dependencies)
+#### 🔧 Build from Scratch
+```bash
+# Full build (slower, but completely from source)
+docker build -f docker/streamlit.dockerfile -t funcella .
+docker run -p 8501:8501 funcella
+```
 
-Open R and run:
+### 🛠️ Manual Installation
 
+1. **R dependencies**
 ```R
 install.packages("renv")
 renv::restore()
 ```
 
-2. Poetry (Python dependencies)
-
-Install [Poetry](https://python-poetry.org/docs/#installation):
-
+2. **Python dependencies**
 ```bash
+# Install Poetry
 curl -sSL https://install.python-poetry.org | python3 -
-```
 
-Install Python dependencies:
-
-```bash
+# Install dependencies
 poetry install
-```
 
-### Running the App
-
-```bash
-docker build -f docker/streamlit.dockerfile -t funcella-app .
-docker run -p 8501:8501 funcella-app
+# Run the app
+streamlit run app.py
 ```
-The application will be available at your localhost (localhost:8501).
-Alternatively, the remote version is available [here]().
 
 ## REFERENCES
 Aibar, S., Bravo González-Blas, C., Moerman, T., Huynh-Thu, V.A., Imrichová, H., Hulselmans, G., Rambow, F., Marine, J.C., Geurts, P., Aerts, J., van den Oord, J., Kalender Atak, Z., Wouters, J., & Aerts, S (2017). SCENIC: Single-cell regulatory network inference and clustering. *Nature Methods*, *14*, 1083–1086.\
