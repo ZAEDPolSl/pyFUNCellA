@@ -81,6 +81,9 @@ RUN apt-get update && \
     libpng16-16 \
     libfreetype6 \
     libicu-dev \
+    libmagick++-6.q16-9t64 \
+    libmagick++-6-headers \
+    imagemagick \
     && add-apt-repository ppa:deadsnakes/ppa \
     && apt-get update \
     && apt-get install -y \

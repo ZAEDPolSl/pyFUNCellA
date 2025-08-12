@@ -47,12 +47,18 @@ def pas_tab():
         )
 
     if st.button("Run PAS calculation", key="run_pas"):
+        import os
+        import tempfile
+
         data = st.session_state.get("data")
         genes = st.session_state.get("genes")
         genesets = st.session_state.get("genesets")
         if data is None or genesets is None or len(genesets) == 0:
             st.error("Both data and genesets must be loaded and non-empty.")
             st.stop()
+        if method == "SSGSEA":
+            tmp_dir = "tmp"
+            os.makedirs(tmp_dir, exist_ok=True)
         kwargs = dict(
             data=data,
             genesets=genesets,
@@ -71,16 +77,42 @@ def pas_tab():
             )
         if method == "JASMINE":
             kwargs["type"] = type_option
-        try:
-            result = gene2path(**kwargs)
-            st.session_state["pas_result"] = result
-            st.success(f"PAS calculation completed. Result shape: {result.shape}")
-            st.dataframe(result)
-            st.download_button(
-                "Download results as CSV",
-                result.to_csv(),
-                file_name=f"{method}_results.csv",
-                on_click="ignore",
-            )
-        except Exception as e:
-            st.error(f"Error running {method}: {e}")
+
+        # Execute analysis
+        if method in ["SSGSEA"]:
+            with st.status(f"Running {method} analysis...", expanded=True) as status:
+                try:
+                    result = gene2path(**kwargs)
+                    status.update(
+                        label=f"{method} analysis completed!", state="complete"
+                    )
+                    st.session_state["pas_result"] = result
+                    st.session_state["pas_method"] = method
+                    st.success(
+                        f"PAS calculation completed. Result shape: {result.shape}"
+                    )
+                    st.dataframe(result)
+                    st.download_button(
+                        "Download results as CSV",
+                        result.to_csv(),
+                        file_name=f"{method}_results.csv",
+                        on_click="ignore",
+                    )
+                except Exception as e:
+                    status.update(label=f"{method} analysis failed", state="error")
+                    st.error(f"Error running {method}: {e}")
+        else:
+            try:
+                result = gene2path(**kwargs)
+                st.session_state["pas_result"] = result
+                st.session_state["pas_method"] = method
+                st.success(f"PAS calculation completed. Result shape: {result.shape}")
+                st.dataframe(result)
+                st.download_button(
+                    "Download results as CSV",
+                    result.to_csv(),
+                    file_name=f"{method}_results.csv",
+                    on_click="ignore",
+                )
+            except Exception as e:
+                st.error(f"Error running {method}: {e}")

@@ -1,9 +1,10 @@
 import streamlit as st
-from app.upload_tab import upload_tab
+
+st.set_page_config(page_title="FUNCellA", page_icon="🧬")
+
 from app.pas_tab import pas_tab
 from app.threshold_tab import threshold_tab
-
-default_genesets = {}  # TODO: Fill with your default genesets
+from app.upload_tab import upload_tab
 
 st.title("FUNCellA (Functional Cell Analysis)")
 st.write(
@@ -13,7 +14,7 @@ st.write(
 tabs = st.tabs(["Upload Files", "PAS Calculation", "Thresholding"])
 
 with tabs[0]:
-    upload_tab(default_genesets)
+    upload_tab()
 with tabs[1]:
     pas_tab()
 with tabs[2]:
