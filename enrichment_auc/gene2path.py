@@ -191,7 +191,8 @@ def gene2path(
     elif method == "JASMINE":
         scores = JASMINE(genesets, data_array, genes, effect_size=type)
     elif method == "ZSCORE":
-        scores = ZSCORE(genesets, data_array, genes)
+        pval, qval, z = ZSCORE(genesets, data_array, genes)
+        scores = z  # Use z-scores as the primary result
     elif method == "SSGSEA":
         scores = SSGSEA(genesets, data_array, genes)
     else:

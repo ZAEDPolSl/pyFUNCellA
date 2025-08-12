@@ -89,7 +89,7 @@ class RProcessExecutor:
                     capture_output=True,
                     text=True,
                     env=env,
-                    timeout=300,  # 5 minute timeout
+                    timeout=900,  # 15 minute timeout
                 )
 
                 if result.returncode != 0:
@@ -106,7 +106,7 @@ class RProcessExecutor:
                 return results
 
             except subprocess.TimeoutExpired:
-                raise RProcessError("R process timed out after 5 minutes")
+                raise RProcessError("R process timed out after 15 minutes")
             except Exception as e:
                 raise RProcessError(f"Failed to execute R process: {str(e)}")
 

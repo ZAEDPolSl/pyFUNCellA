@@ -11,6 +11,9 @@
 
 # Load required libraries
 suppressMessages({
+    library(methods)
+    library(stats)
+    library(utils)
     library(GSVA)
 })
 
