@@ -61,7 +61,7 @@ RUN poetry install --no-interaction --no-root
 
 # Build the package
 COPY README.md /app/
-COPY enrichment_auc /app/enrichment_auc
+COPY pyfuncella /app/pyfuncella
 RUN poetry build
 
 # Production stage - minimal image for deployment

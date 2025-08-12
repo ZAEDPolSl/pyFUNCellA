@@ -66,7 +66,7 @@ def upload_tab():
             except Exception as e:
                 st.error(f"Error loading geneset file: {e}")
         elif geneset_source == "Use default genesets":
-            from enrichment_auc import load_pathways
+            from pyfuncella import load_pathways
 
             st.session_state["genesets"] = load_pathways("data")
             st.success("Default genesets selected.")

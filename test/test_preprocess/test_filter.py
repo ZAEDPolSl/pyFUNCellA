@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from enrichment_auc.preprocess import filter
+from pyfuncella.preprocess import filter
 
 
 def test_thresholds_on_1():

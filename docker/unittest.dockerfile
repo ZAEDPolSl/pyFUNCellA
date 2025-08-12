@@ -61,7 +61,7 @@ RUN chmod +x setup_docker_compatible_renv.R && Rscript setup_docker_compatible_r
 
 # Install Python dependencies using Poetry
 COPY pyproject.toml poetry.lock README.md /app/
-COPY enrichment_auc /app/enrichment_auc
+COPY pyfuncella /app/pyfuncella
 RUN python3.11 -m venv /app/venv &&\
     . /app/venv/bin/activate &&\
     pip install --upgrade pip &&\
@@ -112,7 +112,7 @@ COPY --from=builder /app/dist /app/dist
 RUN /app/venv/bin/pip install /app/dist/*.whl
 
 # Copy source code and tests
-COPY enrichment_auc /app/enrichment_auc
+COPY pyfuncella /app/pyfuncella
 COPY test /app/test
 
 # Run all tests

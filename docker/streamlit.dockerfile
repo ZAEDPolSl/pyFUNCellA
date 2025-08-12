@@ -55,7 +55,7 @@ COPY setup_docker_compatible_renv.R ./
 RUN chmod +x setup_docker_compatible_renv.R && Rscript setup_docker_compatible_renv.R
 
 COPY pyproject.toml poetry.lock README.md /app/
-COPY enrichment_auc /app/enrichment_auc
+COPY pyfuncella /app/pyfuncella
 
 ENV R_HOME=/usr/lib/R
 ENV R_USER=/usr/lib/R/site-library

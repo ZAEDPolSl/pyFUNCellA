@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 from typing import Dict, Any
 
-from enrichment_auc.GMMdecomp import (
+from pyfuncella.GMMdecomp import (
     GMMdecomp,
     _check_r_available,
     _check_dpgmm_installed,

@@ -9,8 +9,8 @@ import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
 
-from enrichment_auc.utils.optimize_clusters import find_optimal_clusters
-from enrichment_auc.utils.progress_callbacks import get_progress_callback
+from pyfuncella.utils.optimize_clusters import find_optimal_clusters
+from pyfuncella.utils.progress_callbacks import get_progress_callback
 
 
 def thr_KM(

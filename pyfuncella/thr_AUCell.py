@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from typing import Optional, Callable, Union, Dict, Any
-from enrichment_auc.utils.progress_callbacks import get_progress_callback
+from pyfuncella.utils.progress_callbacks import get_progress_callback
 from .utils.r_executor import execute_r_code, check_r_available, RProcessError
 
 

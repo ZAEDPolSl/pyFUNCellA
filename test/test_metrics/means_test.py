@@ -1,6 +1,6 @@
 import numpy as np
 
-import enrichment_auc.metrics.mean as mean
+import pyfuncella.metrics.mean as mean
 
 
 def test_mean():

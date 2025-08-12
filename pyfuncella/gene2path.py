@@ -12,16 +12,16 @@ from typing import Dict, List, Optional, Union, Literal
 import warnings
 
 # Import your existing metrics
-from enrichment_auc.metrics.mean import MEAN
-from enrichment_auc.metrics.bina import BINA
-from enrichment_auc.metrics.cerno import AUC
-from enrichment_auc.metrics.aucell import AUCELL
-from enrichment_auc.metrics.jasmine import JASMINE
-from enrichment_auc.metrics.z import Z as ZSCORE
-from enrichment_auc.metrics.gsea import SSGSEA
+from pyfuncella.metrics.mean import MEAN
+from pyfuncella.metrics.bina import BINA
+from pyfuncella.metrics.cerno import AUC
+from pyfuncella.metrics.aucell import AUCELL
+from pyfuncella.metrics.jasmine import JASMINE
+from pyfuncella.metrics.z import Z as ZSCORE
+from pyfuncella.metrics.gsea import SSGSEA
 
 # Import preprocessing functions
-from enrichment_auc.preprocess.filter import (
+from pyfuncella.preprocess.filter import (
     filter as variance_filter,
     filter_coverage,
     filter_size,

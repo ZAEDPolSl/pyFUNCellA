@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from enrichment_auc.metrics import jasmine
+from pyfuncella.metrics import jasmine
 
 
 def test_ranks():

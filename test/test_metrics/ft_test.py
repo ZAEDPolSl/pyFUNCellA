@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-import enrichment_auc.normalize.freeman_tukey as ft
+import pyfuncella.normalize.freeman_tukey as ft
 
 
 def test_ft():

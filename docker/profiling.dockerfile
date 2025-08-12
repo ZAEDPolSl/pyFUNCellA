@@ -1,4 +1,4 @@
-FROM enrichment_auc:dev AS profiling
+FROM pyfuncella:dev AS profiling
 
 EXPOSE 8888
 

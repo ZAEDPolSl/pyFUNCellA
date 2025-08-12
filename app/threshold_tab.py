@@ -31,7 +31,7 @@ def threshold_tab():
                 progress_callback = create_streamlit_progress_callback()
 
                 if method == "K-Means":
-                    from enrichment_auc.thr_KM import thr_KM
+                    from pyfuncella.thr_KM import thr_KM
 
                     thresholded_df = thr_KM(
                         result, verbose=False, progress_callback=progress_callback
@@ -56,8 +56,8 @@ def threshold_tab():
 
                 elif method == "GMM":
                     try:
-                        from enrichment_auc.GMMdecomp import GMMdecomp
-                        from enrichment_auc.thr_GMM import thr_GMM
+                        from pyfuncella.GMMdecomp import GMMdecomp
+                        from pyfuncella.thr_GMM import thr_GMM
 
                         # Step 1: GMM Decomposition
                         status.update(
@@ -122,7 +122,7 @@ def threshold_tab():
 
                 elif method == "AUCell":
                     try:
-                        from enrichment_auc.thr_AUCell import thr_AUCell
+                        from pyfuncella.thr_AUCell import thr_AUCell
 
                         # Check for negative values which can cause AUCell to fail
                         min_value = result.min().min()

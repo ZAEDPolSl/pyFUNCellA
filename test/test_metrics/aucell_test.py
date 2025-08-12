@@ -1,6 +1,6 @@
 import numpy as np
 
-import enrichment_auc.metrics.aucell as aucell
+import pyfuncella.metrics.aucell as aucell
 
 
 def test_aucell():

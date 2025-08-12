@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from enrichment_auc.utils.kmeans_search import last_consecutive_true, km_search
+from pyfuncella.utils.kmeans_search import last_consecutive_true, km_search
 
 
 @pytest.mark.parametrize(

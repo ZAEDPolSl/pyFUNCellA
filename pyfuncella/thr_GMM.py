@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Optional, Callable
-from enrichment_auc.utils.kmeans_search import km_search
-from enrichment_auc.utils.progress_callbacks import get_progress_callback
+from pyfuncella.utils.kmeans_search import km_search
+from pyfuncella.utils.progress_callbacks import get_progress_callback
 
 
 def thr_GMM(gmms, progress_callback: Optional[Callable] = None):

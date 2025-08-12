@@ -1,6 +1,6 @@
 import numpy as np
 
-from enrichment_auc.thr_GMM import thr_GMM
+from pyfuncella.thr_GMM import thr_GMM
 
 
 def test_thr_GMM_basic():

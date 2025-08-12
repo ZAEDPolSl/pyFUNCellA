@@ -1,7 +1,7 @@
 import numpy as np
 from tqdm import tqdm
 
-from enrichment_auc.metrics.rank import rank_genes
+from pyfuncella.metrics.rank import rank_genes
 
 
 def _aucell(

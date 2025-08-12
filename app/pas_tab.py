@@ -1,5 +1,5 @@
 import streamlit as st
-from enrichment_auc.gene2path import gene2path
+from pyfuncella.gene2path import gene2path
 
 
 def pas_tab():

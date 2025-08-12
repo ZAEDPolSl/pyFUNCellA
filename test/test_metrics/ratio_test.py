@@ -1,6 +1,6 @@
 import numpy as np
 
-import enrichment_auc.metrics.bina as bina
+import pyfuncella.metrics.bina as bina
 
 
 def test_ratio():

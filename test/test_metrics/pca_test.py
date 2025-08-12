@@ -1,6 +1,6 @@
 import numpy as np
 
-import enrichment_auc.metrics.svd as svd
+import pyfuncella.metrics.svd as svd
 
 
 def test_svd():

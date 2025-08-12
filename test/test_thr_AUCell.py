@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from enrichment_auc.thr_AUCell import thr_AUCell, _check_aucell_installed
-from enrichment_auc.utils.r_executor import check_r_available
+from pyfuncella.thr_AUCell import thr_AUCell, _check_aucell_installed
+from pyfuncella.utils.r_executor import check_r_available
 
 
 class TestThrAUCell:

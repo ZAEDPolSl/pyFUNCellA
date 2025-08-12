@@ -51,7 +51,7 @@ COPY renv.lock ./
 COPY setup_docker_compatible_renv.R ./
 RUN chmod +x setup_docker_compatible_renv.R && Rscript setup_docker_compatible_renv.R
 COPY pyproject.toml poetry.lock README.md /app/
-COPY enrichment_auc /app/enrichment_auc
+COPY pyfuncella /app/pyfuncella
 RUN python3.11 -m venv /app/venv &&\
     . /app/venv/bin/activate &&\
     pip install --upgrade pip &&\
@@ -98,6 +98,6 @@ RUN echo 'options(repos = c(CRAN = "https://cloud.r-project.org/"))' >> /usr/loc
 RUN echo '.libPaths(c("/usr/local/lib/R/site-library", .libPaths()))' >> /usr/local/lib/R/etc/Rprofile.site
 COPY --from=builder /app/dist /app/dist
 RUN /app/venv/bin/pip install /app/dist/*.whl
-COPY enrichment_auc /app/enrichment_auc
+COPY pyfuncella /app/pyfuncella
 COPY test /app/test
 COPY . /app/

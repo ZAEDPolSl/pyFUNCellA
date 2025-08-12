@@ -8,8 +8,8 @@ import streamlit as st
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 
-from enrichment_auc.plot.plot_distributed_data import plot_pas_distribution
-from enrichment_auc.plot.plot_scatter_flow import scatterplot_subplots
+from pyfuncella.plot.plot_distributed_data import plot_pas_distribution
+from pyfuncella.plot.plot_scatter_flow import scatterplot_subplots
 
 
 def calculate_pca_tsne_coordinates():
