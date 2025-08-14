@@ -22,7 +22,7 @@ Implemented thresholding solutions:
 3) GMM thresholding with Top 1 and k-means adjustment (Zyla et al. 2025?)
 
 ## Installation & Usage
-The application is available [here](). It is free of charge and it does not store your data. Feel free to use it!  
+The application is available [here](https://dssoftware.aei.polsl.pl/FUNCellA). It is free of charge and it does not store your data. Feel free to use it!  
 If you want to run it locally, there are several options:
 ### 🐳 Docker
 

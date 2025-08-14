@@ -19,6 +19,8 @@ pathway_data <- pathway_scores
 pathway_matrix <- as.matrix(pathway_data)
 
 # Use the exact same approach as FUNCellA
+# Note: Using ::: operator to access internal AUCell function that provides
+# the specific thresholding algorithm required for compatibility with FUNCellA
 # AUCell:::.auc_assignmnetThreshold_v6(as.matrix(df_path[i,]),plotHist = F)$selected
 result_obj <- AUCell:::.auc_assignmnetThreshold_v6(pathway_matrix, plotHist = FALSE)
 

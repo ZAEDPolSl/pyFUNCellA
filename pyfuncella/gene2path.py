@@ -28,6 +28,124 @@ from pyfuncella.preprocess.filter import (
 )
 
 
+def _validate_inputs(data, genesets, method):
+    """Validate input parameters for gene2path."""
+    if data is None or len(data) == 0:
+        raise ValueError("No data provided")
+
+    if genesets is None or len(genesets) == 0:
+        raise ValueError("No pathway list provided")
+
+    valid_methods = [
+        "CERNO",
+        "MEAN",
+        "BINA",
+        "AUCELL",
+        "JASMINE",
+        "ZSCORE",
+        "SSGSEA",
+    ]
+    if method not in valid_methods:
+        raise ValueError(f"Method must be one of {valid_methods}")
+
+
+def _prepare_data_and_genes(data, genes):
+    """Prepare data array and gene names from input."""
+    if isinstance(data, pd.DataFrame):
+        if genes is None:
+            genes = list(data.index)
+        data_array = data.values
+        sample_names = list(data.columns)
+    else:
+        data_array = np.array(data)
+        if genes is None:
+            genes = [f"Gene_{i}" for i in range(data_array.shape[0])]
+        sample_names = [f"Sample_{i}" for i in range(data_array.shape[1])]
+
+    if len(genes) != data_array.shape[0]:
+        raise ValueError("Number of genes must match number of rows in data")
+
+    return data_array, genes, sample_names
+
+
+def _apply_variance_filtering(data, data_array, genes, variance_filter_threshold):
+    """Apply variance filtering to the data if requested."""
+    if variance_filter_threshold is None:
+        return data_array, genes
+
+    print(f"Applying variance filtering (keep top {variance_filter_threshold:.2%})")
+
+    if isinstance(data, pd.DataFrame):
+        try:
+            filtered_data = variance_filter(data, leave_best=variance_filter_threshold)
+            if isinstance(filtered_data, pd.DataFrame):
+                data_array = filtered_data.values
+                genes = list(filtered_data.index)
+            else:
+                raise ValueError("Unexpected return type from variance filter")
+        except Exception as e:
+            print(f"Warning: Variance filtering failed: {e}")
+            print("Continuing without variance filtering...")
+    else:
+        # Use enhanced filter function for numpy arrays
+        try:
+            filtered_result = variance_filter(
+                data_array, leave_best=variance_filter_threshold, genes=genes
+            )
+            if isinstance(filtered_result, tuple) and len(filtered_result) == 2:
+                data_array, genes = filtered_result
+            else:
+                raise ValueError("Unexpected return type from variance filter")
+        except Exception as e:
+            print(f"Warning: Variance filtering failed: {e}")
+            print("Continuing without variance filtering...")
+
+    if genes is not None:
+        print(f"After variance filtering: {len(genes)} genes")
+
+    return data_array, genes
+
+
+def _apply_pathway_filtering(genesets, genes, filt_min, filt_max, filt_cov):
+    """Apply pathway filtering based on size and coverage."""
+    # Filter pathways by size (filt_min, filt_max)
+    if filt_min > 0 or filt_max < float("inf"):
+        genesets = filter_size(genesets, min_size=filt_min, max_size=filt_max)
+
+    # Filter pathways by coverage (filt_cov)
+    if filt_cov > 0:
+        genesets = filter_coverage(genesets, genes, min_coverage=filt_cov)
+
+    return genesets
+
+
+def _calculate_pathway_scores(
+    method, genesets, data_array, genes, aucell_threshold, type
+):
+    """Calculate pathway scores using the specified method."""
+    print(f"Calculating {method} scores...")
+
+    if method == "CERNO":
+        scores = AUC(genesets, data_array, genes)  # Use existing AUC function
+    elif method == "MEAN":
+        scores = MEAN(genesets, data_array, genes)
+    elif method == "BINA":
+        scores = BINA(genesets, data_array, genes)
+    elif method == "AUCELL":
+        scores = AUCELL(genesets, data_array, genes, aucell_threshold)
+    elif method == "JASMINE":
+        scores = JASMINE(genesets, data_array, genes, effect_size=type)
+    elif method == "ZSCORE":
+        pval, qval, z = ZSCORE(genesets, data_array, genes)
+        scores = z  # Use z-scores as the primary result
+    elif method == "SSGSEA":
+        scores = SSGSEA(genesets, data_array, genes)
+    else:
+        raise ValueError(f"Method {method} not implemented")
+
+    return scores
+
+
 def gene2path(
     data: Union[np.ndarray, pd.DataFrame],
     genesets: Dict[str, List[str]],
@@ -88,88 +206,26 @@ def gene2path(
     """
 
     # Input validation
-    if data is None or len(data) == 0:
-        raise ValueError("No data provided")
-
-    if genesets is None or len(genesets) == 0:
-        raise ValueError("No pathway list provided")
+    _validate_inputs(data, genesets, method)
 
     # Convert to numpy array if needed and get gene names
-    if isinstance(data, pd.DataFrame):
-        if genes is None:
-            genes = list(data.index)
-        data_array = data.values
-        sample_names = list(data.columns)
-    else:
-        data_array = np.array(data)
-        if genes is None:
-            genes = [f"Gene_{i}" for i in range(data_array.shape[0])]
-        sample_names = [f"Sample_{i}" for i in range(data_array.shape[1])]
-
-    if len(genes) != data_array.shape[0]:
-        raise ValueError("Number of genes must match number of rows in data")
-
-    # Validate method
-    valid_methods = [
-        "CERNO",
-        "MEAN",
-        "BINA",
-        "AUCELL",
-        "JASMINE",
-        "ZSCORE",
-        "SSGSEA",
-    ]
-    if method not in valid_methods:
-        raise ValueError(f"Method must be one of {valid_methods}")
+    data_array, genes, sample_names = _prepare_data_and_genes(data, genes)
 
     print(f"Starting gene2path transformation using {method} method")
     print(f"Input data: {data_array.shape[0]} genes x {data_array.shape[1]} samples")
     print(f"Input pathways: {len(genesets)}")
 
     # Apply variance filtering if requested
-    if variance_filter_threshold is not None:
-        print(f"Applying variance filtering (keep top {variance_filter_threshold:.2%})")
-        if isinstance(data, pd.DataFrame):
-            try:
-                filtered_data = variance_filter(
-                    data, leave_best=variance_filter_threshold
-                )
-                if isinstance(filtered_data, pd.DataFrame):
-                    data_array = filtered_data.values
-                    genes = list(filtered_data.index)
-                else:
-                    raise ValueError("Unexpected return type from variance filter")
-            except Exception as e:
-                print(f"Warning: Variance filtering failed: {e}")
-                print("Continuing without variance filtering...")
-        else:
-            # Use enhanced filter function for numpy arrays
-            try:
-                filtered_result = variance_filter(
-                    data_array, leave_best=variance_filter_threshold, genes=genes
-                )
-                if isinstance(filtered_result, tuple) and len(filtered_result) == 2:
-                    data_array, genes = filtered_result
-                else:
-                    raise ValueError("Unexpected return type from variance filter")
-            except Exception as e:
-                print(f"Warning: Variance filtering failed: {e}")
-                print("Continuing without variance filtering...")
-
-        if genes is not None:
-            print(f"After variance filtering: {len(genes)} genes")
+    data_array, genes = _apply_variance_filtering(
+        data, data_array, genes, variance_filter_threshold
+    )
 
     # Ensure genes is not None for the rest of the function
     if genes is None:
         raise ValueError("Gene names are required for filtering operations")
 
-    # Filter pathways by size (filt_min, filt_max)
-    if filt_min > 0 or filt_max < float("inf"):
-        genesets = filter_size(genesets, min_size=filt_min, max_size=filt_max)
-
-    # Filter pathways by coverage (filt_cov)
-    if filt_cov > 0:
-        genesets = filter_coverage(genesets, genes, min_coverage=filt_cov)
+    # Filter pathways
+    genesets = _apply_pathway_filtering(genesets, genes, filt_min, filt_max, filt_cov)
 
     print(f"Final pathways for analysis: {len(genesets)}")
 
@@ -178,25 +234,9 @@ def gene2path(
         return pd.DataFrame()
 
     # Calculate pathway scores based on method
-    print(f"Calculating {method} scores...")
-
-    if method == "CERNO":
-        scores = AUC(genesets, data_array, genes)  # Use existing AUC function
-    elif method == "MEAN":
-        scores = MEAN(genesets, data_array, genes)
-    elif method == "BINA":
-        scores = BINA(genesets, data_array, genes)
-    elif method == "AUCELL":
-        scores = AUCELL(genesets, data_array, genes, aucell_threshold)
-    elif method == "JASMINE":
-        scores = JASMINE(genesets, data_array, genes, effect_size=type)
-    elif method == "ZSCORE":
-        pval, qval, z = ZSCORE(genesets, data_array, genes)
-        scores = z  # Use z-scores as the primary result
-    elif method == "SSGSEA":
-        scores = SSGSEA(genesets, data_array, genes)
-    else:
-        raise ValueError(f"Method {method} not implemented")
+    scores = _calculate_pathway_scores(
+        method, genesets, data_array, genes, aucell_threshold, type
+    )
 
     # Create result DataFrame
     pathway_names = list(genesets.keys())
@@ -206,90 +246,3 @@ def gene2path(
     print(f"Output: {result_df.shape[0]} pathways x {result_df.shape[1]} samples")
 
     return result_df
-
-
-# Example usage and utility functions
-def create_example_data(
-    n_genes: int = 1000, n_samples: int = 50, n_pathways: int = 10
-) -> tuple:
-    """
-    Create example data for testing gene2path function.
-
-    Args:
-        n_genes: Number of genes
-        n_samples: Number of samples
-        n_pathways: Number of pathways to create
-
-    Returns:
-        Tuple of (data, genesets, genes) for testing
-    """
-    # Create gene expression data
-    data = np.random.randn(n_genes, n_samples)
-
-    # Create gene names
-    genes = [f"Gene_{i}" for i in range(n_genes)]
-
-    # Create pathways
-    genesets = {}
-    pathway_size_range = (15, 50)
-
-    for i in range(n_pathways):
-        pathway_size = np.random.randint(pathway_size_range[0], pathway_size_range[1])
-        pathway_genes = np.random.choice(genes, size=pathway_size, replace=False)
-        genesets[f"Pathway_{i}"] = list(pathway_genes)
-
-    return data, genesets, genes
-
-
-def run_example():
-    """
-    Run an example of the gene2path function with various methods.
-    """
-    print("=== Gene2Path Example ===")
-
-    # Create example data
-    data, genesets, genes = create_example_data(n_genes=500, n_samples=20, n_pathways=5)
-    print(
-        f"Created example data: {len(genes)} genes, {len(genesets)} pathways, {data.shape[1]} samples"
-    )
-
-    # Test different methods
-    methods = ["CERNO", "MEAN", "BINA", "AUCELL", "JASMINE", "ZSCORE", "SSGSEA", "AUC"]
-
-    for method in methods:
-        try:
-            print(f"\nTesting {method} method...")
-            if method == "JASMINE":
-                # Test both JASMINE types
-                for jasmine_type in ["oddsratio", "likelihood"]:
-                    print(f"  Testing JASMINE with {jasmine_type}...")
-                    scores = gene2path(
-                        data=data,
-                        genesets=genesets,
-                        genes=genes,
-                        method=method,  # type: ignore
-                        type=jasmine_type,  # type: ignore
-                    )
-                    print(
-                        f"  ✓ JASMINE ({jasmine_type}): Generated {scores.shape[0]} pathway scores for {scores.shape[1]} samples"
-                    )
-            else:
-                scores = gene2path(
-                    data=data,
-                    genesets=genesets,
-                    genes=genes,
-                    method=method,  # type: ignore
-                )
-                print(
-                    f"✓ {method}: Generated {scores.shape[0]} pathway scores for {scores.shape[1]} samples"
-                )
-
-        except Exception as e:
-            print(f"✗ {method}: Failed with error: {str(e)}")
-
-    print("\n=== Example Complete ===")
-
-
-if __name__ == "__main__":
-    # Run example when script is executed directly
-    run_example()

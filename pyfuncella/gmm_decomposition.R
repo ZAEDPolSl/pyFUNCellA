@@ -55,7 +55,7 @@ row_multiple <- function(row) {
     if (is.null(serializable_result$threshold)) serializable_result$threshold <- numeric(0)
     if (is.null(serializable_result$cluster)) serializable_result$cluster <- integer(0)
 
-    return(serializable_result)
+    serializable_result
 }
 
 # GMM Calculation for each row (should be just one row now)
