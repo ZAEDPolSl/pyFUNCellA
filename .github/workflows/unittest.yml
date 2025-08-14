@@ -18,50 +18,44 @@ jobs:
       matrix:
         python-version: ["3.9", "3.10", "3.11"]
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
     - name: Set up R 4.4.2
       uses: r-lib/actions/setup-r@v2
       with:
         r-version: '4.4.2'
-    - name: Install R development packages
+        
+    - name: Install R system dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y \
-          r-base-dev \
-          libcurl4-openssl-dev \
-          libssl-dev \
-          libxml2-dev \
-          libgit2-dev \
-          libmagick++-dev
-    - name: Setup R packages using docker-compatible script
+        sudo apt-get install -y r-base-dev libcurl4-openssl-dev libssl-dev libxml2-dev libgit2-dev libmagick++-dev
+    - name: Setup R packages with renv
       env:
         GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
         R_REMOTES_NO_ERRORS_FROM_WARNINGS: "true"
+      run: Rscript setup_docker_compatible_renv.R
+    - name: Copy renv packages to global library
       run: |
-        R -e "install.packages('remotes', repos='https://cran.r-project.org')"
-        chmod +x setup_docker_compatible_renv.R
-        Rscript setup_docker_compatible_renv.R
-    - name: Verify R packages installation
-      run: |
-        R -e "
-        essential_packages <- c('BiocManager', 'rjson', 'GSVA', 'dpGMM', 'AUCell')
-        cat('Verifying R packages installation:\\n')
-        all_ok <- TRUE
-        for (pkg in essential_packages) {
-          if (require(pkg, quietly = TRUE, character.only = TRUE)) {
-            cat(sprintf('  ✓ %s\\n', pkg))
-          } else {
-            cat(sprintf('  ✗ %s (MISSING)\\n', pkg))
-            all_ok <- FALSE
-          }
+        R --slave -e "
+        renv_lib <- renv::paths\$library()
+        global_lib <- R.home('library')
+        packages <- list.dirs(renv_lib, full.names = FALSE, recursive = FALSE)
+        packages <- packages[packages != '']
+        cat('Copying', length(packages), 'packages...\n')
+        for (pkg in packages) {
+          system(paste('cp -rf', shQuote(file.path(renv_lib, pkg)), shQuote(global_lib)))
         }
-        if (!all_ok) {
-          cat('Some packages are missing, this will cause test failures\\n')
-          quit(status = 1)
-        }
-        cat('All essential R packages verified successfully\\n')
         "
-    - name: Install poetry
+    - name: Verify essential packages
+      run: |
+        R --slave -e "
+        essential <- c('BiocManager', 'rjson', 'GSVA', 'dpGMM', 'AUCell')
+        missing <- essential[!sapply(essential, require, quietly=TRUE, character.only=TRUE)]
+        if (length(missing) > 0) { cat('Missing:', paste(missing, collapse=', '), '\n'); quit(status=1) }
+        cat('✓ All packages verified\n')
+        "
+    - name: Install Poetry
       run: pipx install poetry
 
     - name: Set up Python ${{ matrix.python-version }}
@@ -69,9 +63,9 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'poetry'
-    - name: Install dependencies
-      run: |
-        poetry install --with dev
-        poetry build
-    - name: Running the tests with pytest
+        
+    - name: Install Python dependencies
+      run: poetry install --with dev
+        
+    - name: Run Python tests
       run: poetry run pytest
