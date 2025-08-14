@@ -7,6 +7,8 @@ import pandas as pd
 import pytest
 from typing import Dict, Any
 
+import pytest
+
 from pyfuncella.GMMdecomp import (
     GMMdecomp,
     _check_r_available,

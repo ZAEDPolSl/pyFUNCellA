@@ -265,11 +265,19 @@ def GMMdecomp(
         If input parameters are invalid.
     """
 
-    # Check R availability
+    # Check R availability first with informative error message
     if not check_r_available():
         raise RuntimeError(
-            "R is not available. Please ensure R is installed and accessible."
+            "R is not available. GMM decomposition requires R with the dpGMM package.\n"
+            "Please ensure:\n"
+            "1. R is installed and accessible from your PATH\n"
+            "2. Install R dependencies by running: Rscript setup_docker_compatible_renv.R\n"
+            "3. Or manually install required packages: BiocManager::install('GSVA'); "
+            "remotes::install_github('ZAEDPolSl/dpGMM')"
         )
+
+    # Validate inputs
+    _validate_inputs(X, K, multiply, IC, parallel, verbose)
 
     # Check dpGMM availability
     if not _check_dpgmm_installed():
@@ -278,11 +286,9 @@ def GMMdecomp(
         if not _install_dpgmm():
             raise RuntimeError(
                 "Failed to install dpGMM package. "
-                "Please install it manually: devtools::install_github('ZAEDPolSl/dpGMM')"
+                "Please install it manually by running: Rscript setup_docker_compatible_renv.R\n"
+                "Or use: remotes::install_github('ZAEDPolSl/dpGMM')"
             )
-
-    # Validate inputs
-    _validate_inputs(X, K, multiply, IC, parallel, verbose)
 
     # Prepare data
     X_for_r = _prepare_data(X, multiply, verbose)

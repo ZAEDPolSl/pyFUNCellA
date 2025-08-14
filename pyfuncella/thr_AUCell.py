@@ -58,10 +58,20 @@ def thr_AUCell(
         Thresholds are in the original data scale.
     """
     if not check_r_available():
-        raise RuntimeError("R is not available")
+        raise RuntimeError(
+            "R is not available. AUCell thresholding requires R with the AUCell package.\n"
+            "Please ensure:\n"
+            "1. R is installed and accessible from your PATH\n"
+            "2. Install R dependencies by running: Rscript setup_docker_compatible_renv.R\n"
+            "3. Or manually install AUCell: BiocManager::install('AUCell')"
+        )
 
     if not _check_aucell_installed():
-        raise RuntimeError("AUCell package is not installed in R")
+        raise RuntimeError(
+            "AUCell package is not installed in R.\n"
+            "Please install it by running: Rscript setup_docker_compatible_renv.R\n"
+            "Or manually: BiocManager::install('AUCell')"
+        )
 
     # Convert input to DataFrame if needed
     if isinstance(df_path, np.ndarray):

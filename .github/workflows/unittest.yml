@@ -26,27 +26,40 @@ jobs:
     - name: Install R development packages
       run: |
         sudo apt-get update
-        sudo apt-get install -y r-base-dev libcurl4-openssl-dev libssl-dev libxml2-dev libmagick++-dev pkg-config cmake
-    - name: Install renv and restore R packages with fallback
+        sudo apt-get install -y \
+          r-base-dev \
+          libcurl4-openssl-dev \
+          libssl-dev \
+          libxml2-dev \
+          libgit2-dev \
+          libmagick++-dev
+    - name: Setup R packages using docker-compatible script
+      env:
+        GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+        R_REMOTES_NO_ERRORS_FROM_WARNINGS: "true"
       run: |
-        R -e "install.packages('renv', repos='https://cloud.r-project.org/')"
+        R -e "install.packages('remotes', repos='https://cran.r-project.org')"
+        chmod +x setup_docker_compatible_renv.R
+        Rscript setup_docker_compatible_renv.R
+    - name: Verify R packages installation
+      run: |
         R -e "
-        tryCatch({
-          renv::restore(confirm = FALSE)
-          cat('✓ renv restore completed\n')
-        }, error = function(e) {
-          cat('Warning: renv restore failed:', conditionMessage(e), '\n')
-          cat('Installing essential packages manually...\n')
-          
-          # Install base packages that often cause issues
-          install.packages(c('MASS', 'Matrix', 'nlme', 'mgcv', 'survival'), repos='https://cloud.r-project.org/')
-          install.packages(c('BiocManager', 'rjson', 'remotes'), repos='https://cloud.r-project.org/')
-          if (!require('BiocManager', quietly=TRUE)) stop('BiocManager failed')
-          BiocManager::install('GSVA')
-          remotes::install_github('ZAEDPolSl/dpGMM')
-          
-          cat('✓ Essential packages installed\n')
-        })
+        essential_packages <- c('BiocManager', 'rjson', 'GSVA', 'dpGMM', 'AUCell')
+        cat('Verifying R packages installation:\\n')
+        all_ok <- TRUE
+        for (pkg in essential_packages) {
+          if (require(pkg, quietly = TRUE, character.only = TRUE)) {
+            cat(sprintf('  ✓ %s\\n', pkg))
+          } else {
+            cat(sprintf('  ✗ %s (MISSING)\\n', pkg))
+            all_ok <- FALSE
+          }
+        }
+        if (!all_ok) {
+          cat('Some packages are missing, this will cause test failures\\n')
+          quit(status = 1)
+        }
+        cat('All essential R packages verified successfully\\n')
         "
     - name: Install poetry
       run: pipx install poetry

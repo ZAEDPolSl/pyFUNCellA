@@ -49,11 +49,26 @@ docker run -p 8501:8501 funcella
 
 ### 🛠️ Manual Installation
 
-1. **R dependencies**
+1. **R dependencies** (Required for GMM and AUCell thresholding)
+```bash
+# Recommended: Use the setup script for reliable installation
+Rscript setup_docker_compatible_renv.R
+```
+
+**Alternative R setup methods:**
 ```R
+# Option 1: Using renv (may require manual package fixes)
 install.packages("renv")
 renv::restore()
+
+# Option 2: Manual installation
+install.packages("BiocManager")
+BiocManager::install("GSVA")
+BiocManager::install("AUCell")
+remotes::install_github("ZAEDPolSl/dpGMM")
 ```
+
+**Note:** If you encounter GitHub authentication issues when installing dpGMM, the setup script handles this automatically by using alternative installation methods.
 
 2. **Python dependencies**
 ```bash
@@ -66,6 +81,13 @@ poetry install
 # Run the app
 streamlit run app.py
 ```
+
+## 🔧 Troubleshooting
+
+### R Package Issues
+If you encounter errors related to missing R package dpGMM:
+   - The package will attempt automatic installation
+   - Alternatively, download and install manually from the repository environment.
 
 ## REFERENCES
 Aibar, S., Bravo González-Blas, C., Moerman, T., Huynh-Thu, V.A., Imrichová, H., Hulselmans, G., Rambow, F., Marine, J.C., Geurts, P., Aerts, J., van den Oord, J., Kalender Atak, Z., Wouters, J., & Aerts, S (2017). SCENIC: Single-cell regulatory network inference and clustering. *Nature Methods*, *14*, 1083–1086.\

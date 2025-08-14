@@ -7,17 +7,15 @@ from pyfuncella.utils.r_executor import check_r_available
 
 
 class TestThrAUCell:
+    """Test class for thr_AUCell functionality."""
+
     def test_r_available(self):
-        # Test that R is available through process-based execution
-        if not check_r_available():
-            pytest.skip("R is not available")
+        """Test that R is available through process-based execution."""
+        assert check_r_available(), "R is not available. Please install R to run tests."
 
     def test_aucell_installed(self):
-        # Test that AUCell package is installed in R
-        if not _check_aucell_installed():
-            pytest.skip("AUCell R package is not installed")
-
-    """Test class for thr_AUCell functionality."""
+        """Test that AUCell package is installed in R."""
+        assert _check_aucell_installed(), "AUCell R package is not installed"
 
     def test_thr_AUCell_numpy(self):
         np.random.seed(42)
