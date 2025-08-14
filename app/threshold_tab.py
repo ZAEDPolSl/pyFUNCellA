@@ -124,29 +124,6 @@ def threshold_tab():
                     try:
                         from pyfuncella.thr_AUCell import thr_AUCell
 
-                        # Check for negative values which can cause AUCell to fail
-                        min_value = result.min().min()
-                        pas_method = st.session_state.get("pas_method", "PAS")
-                        if min_value < 0:
-                            st.warning(
-                                f"⚠️ Detected negative values in {pas_method} data (minimum: {min_value:.4f})"
-                            )
-                            st.info(
-                                "AUCell expects non-negative enrichment scores. Some PAS methods can produce negative values."
-                            )
-                            st.info("Consider:")
-                            st.info(
-                                "• Using K-Means or GMM thresholding (more robust to negative values)"
-                            )
-                            st.info(
-                                "• Using a different PAS method that produces non-negative scores"
-                            )
-                            status.update(
-                                label="AUCell thresholding skipped - negative values detected",
-                                state="error",
-                            )
-                            return
-
                         aucell_thresholds = thr_AUCell(
                             result, progress_callback=progress_callback
                         )

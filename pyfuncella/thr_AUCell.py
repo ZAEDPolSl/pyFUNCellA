@@ -35,6 +35,10 @@ def thr_AUCell(
     """
     Calculate activity thresholds for pathways using AUCell's thresholding algorithm.
 
+    Automatically normalizes data to [0,1] range if values are outside this range,
+    calculates thresholds on normalized data, then rescales thresholds back to
+    original data range.
+
     Parameters
     ----------
     df_path : pd.DataFrame or np.ndarray
@@ -51,6 +55,7 @@ def thr_AUCell(
     -------
     dict
         Dictionary mapping pathway names to threshold activity score.
+        Thresholds are in the original data scale.
     """
     if not check_r_available():
         raise RuntimeError("R is not available")
@@ -73,6 +78,52 @@ def thr_AUCell(
             df = df.copy()
             df.index = pd.Index([f"pathway_{i}" for i in range(df.shape[0])])
 
+    # Check if normalization is needed and store per-pathway scaling info
+    pathway_scaling_info = {}
+    df_normalized = df.copy()
+
+    for pathway_name in df.index:
+        pathway_data = df.loc[pathway_name]
+        data_min = np.min(pathway_data)
+        data_max = np.max(pathway_data)
+
+        # Check if this pathway needs normalization
+        if data_min < 0 or data_max > 1:
+            # Store scaling info for this pathway
+            original_range = data_max - data_min
+            if original_range == 0:
+                # Handle constant values - no normalization needed
+                pathway_scaling_info[pathway_name] = None
+            else:
+                pathway_scaling_info[pathway_name] = {
+                    "min": data_min,
+                    "max": data_max,
+                    "range": original_range,
+                }
+                # Normalize this pathway to [0, 1]
+                df_normalized.loc[pathway_name] = (
+                    pathway_data - data_min
+                ) / original_range
+        else:
+            # No normalization needed for this pathway
+            pathway_scaling_info[pathway_name] = None
+
+    # Count how many pathways needed normalization
+    normalized_count = sum(
+        1 for info in pathway_scaling_info.values() if info is not None
+    )
+    total_pathways = len(df.index)
+
+    if progress_callback:
+        if normalized_count > 0:
+            progress_callback(
+                0,
+                len(df),
+                f"Normalized {normalized_count}/{total_pathways} pathways to [0, 1] range",
+            )
+        else:
+            progress_callback(0, len(df), "All pathways already in [0, 1] range")
+
     # Get the path to the R script and read it
     import os
 
@@ -85,14 +136,16 @@ def thr_AUCell(
 
     try:
         if progress_callback:
-            progress_callback(0, len(df), "Starting AUCell threshold calculation")
+            progress_callback(
+                0, len(df_normalized), "Starting AUCell threshold calculation"
+            )
 
         thresholds = {}
 
         # Process each pathway individually for proper progress reporting
-        for i, (pathway_name, pathway_data) in enumerate(df.iterrows()):
+        for i, (pathway_name, pathway_data) in enumerate(df_normalized.iterrows()):
             if progress_callback:
-                progress_callback(i, len(df), f"Processing {pathway_name}")
+                progress_callback(i, len(df_normalized), f"Processing {pathway_name}")
 
             # Prepare single pathway data for R
             pathway_df = pd.DataFrame([pathway_data], index=[pathway_name])
@@ -104,14 +157,29 @@ def thr_AUCell(
             if result.get("success", False):
                 threshold_value = result.get("aucell_results")
                 if threshold_value is not None:
+                    # Rescale threshold back to original data range if normalization was applied
+                    scaling_info = pathway_scaling_info[pathway_name]
+                    if scaling_info is not None:
+                        # Rescale: threshold_original = threshold_normalized * range + min
+                        threshold_value = (
+                            threshold_value * scaling_info["range"]
+                            + scaling_info["min"]
+                        )
                     thresholds[pathway_name] = threshold_value
             else:
                 print(f"Warning: Failed to calculate threshold for {pathway_name}")
 
         if progress_callback:
-            progress_callback(
-                len(df), len(df), "AUCell threshold calculation completed"
-            )
+            if normalized_count > 0:
+                progress_callback(
+                    len(df),
+                    len(df),
+                    f"AUCell completed ({normalized_count} pathways rescaled to original ranges)",
+                )
+            else:
+                progress_callback(
+                    len(df), len(df), "AUCell threshold calculation completed"
+                )
 
         return thresholds
 
