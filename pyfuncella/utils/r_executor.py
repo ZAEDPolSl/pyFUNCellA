@@ -34,9 +34,37 @@ class RProcessExecutor:
         Args:
             r_libs_path: Optional path to R libraries directory
         """
-        self.r_libs_path = r_libs_path or os.environ.get(
-            "R_LIBS_USER", "/usr/local/lib/R/site-library"
-        )
+        # Detect renv environment
+        renv_activate = Path("renv/activate.R")
+        if renv_activate.exists():
+            # Use renv library path
+            # renv library is usually at renv/library/<platform>/<R-version>
+            # We'll try to find the first subdir under renv/library
+            renv_lib_root = Path("renv/library")
+            renv_lib_path = None
+            if renv_lib_root.exists():
+                for subdir in renv_lib_root.iterdir():
+                    if subdir.is_dir():
+                        # Use the first platform subdir (e.g., 'macos', 'linux', etc.)
+                        for rver in subdir.iterdir():
+                            if rver.is_dir():
+                                renv_lib_path = str(rver)
+                                break
+                        if renv_lib_path:
+                            break
+            self.using_renv = True
+            self.renv_lib_path = renv_lib_path
+            self.r_libs_path = (
+                renv_lib_path
+                or r_libs_path
+                or os.environ.get("R_LIBS_USER", "/usr/local/lib/R/site-library")
+            )
+        else:
+            self.using_renv = False
+            self.renv_lib_path = None
+            self.r_libs_path = r_libs_path or os.environ.get(
+                "R_LIBS_USER", "/usr/local/lib/R/site-library"
+            )
 
     def execute_r_script(
         self, r_code: str, data_inputs: Optional[Dict[str, Any]] = None
@@ -72,9 +100,15 @@ class RProcessExecutor:
                 # Execute R script using simple subprocess call (like GSEA module)
                 env = os.environ.copy()
                 env["R_LIBS_USER"] = self.r_libs_path
-                # Disable renv for this session to avoid conflicts
-                env["RENV_CONFIG_AUTOLOADER_ENABLED"] = "FALSE"
-                env["RENV_PROJECT"] = ""
+                if self.using_renv:
+                    # Activate renv by sourcing renv/activate.R in the R script (handled below)
+                    # Do not disable renv
+                    env.pop("RENV_CONFIG_AUTOLOADER_ENABLED", None)
+                    env.pop("RENV_PROJECT", None)
+                else:
+                    # Disable renv for this session to avoid conflicts
+                    env["RENV_CONFIG_AUTOLOADER_ENABLED"] = "FALSE"
+                    env["RENV_PROJECT"] = ""
 
                 cmd = [
                     "Rscript",
@@ -182,13 +216,30 @@ class RProcessExecutor:
             f"  work_dir <- '{temp_path}'",
             "}",
             "",
-            "# Set library paths",
-            f".libPaths(c('{self.r_libs_path}', .libPaths()))",
-            "",
-            "# Main execution with error handling",
-            "tryCatch({",
-            "",
         ]
+        # If using renv, source renv/activate.R
+        if self.using_renv:
+            script_parts.append("# Activate renv if present")
+            script_parts.append(
+                "if (file.exists('renv/activate.R')) source('renv/activate.R')"
+            )
+            # Add both renv and global lib paths
+            if self.renv_lib_path:
+                script_parts.append(
+                    f".libPaths(c('{self.renv_lib_path}', .libPaths()))"
+                )
+            else:
+                script_parts.append(f".libPaths(c('{self.r_libs_path}', .libPaths()))")
+        else:
+            script_parts.append(f".libPaths(c('{self.r_libs_path}', .libPaths()))")
+        script_parts.extend(
+            [
+                "",
+                "# Main execution with error handling",
+                "tryCatch({",
+                "",
+            ]
+        )
 
         if has_inputs:
             script_parts.extend(
