@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "enrichment_auc"
+name = "pyfuncella"
 version = "0.1.0"
-description = ""
+description = "Python implementation of Functional Cell Analysis (FUNCellA) for single-sample pathway enrichment analysis"
 authors = ["amrukwa <a.mrukwa00@gmail.com>"]
 license = "Apache-2.0"
 readme = "README.md"
@@ -11,9 +11,9 @@ generate-setup-file = true
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.12"
-setuptools = ">=67.7.2"
+setuptools = ">=68.0.0"
 importlib-metadata = "^6.6.0"
-numpy = "^1.24.3"
+numpy = ">=1.24.3,<2.0.0"
 pandas = "^2.0.1"
 scipy = "^1.8"
 scikit-learn = "^1.2.2"
@@ -22,11 +22,6 @@ seaborn = "^0.12.2"
 tqdm = "^4.65.0"
 statsmodels = "^0.14.0"
 matplotlib = "^3.7.1"
-tensorflow = "^2.13.0"
-tensorflow-io-gcs-filesystem = "^0.33.0"
-keras = "^2.13.1"
-
-[tool.poetry.dev-dependencies]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.3.1"
@@ -39,3 +34,6 @@ requires = ["poetry-core>=1.0.0",
             "numpy>=1.24.3",
             "setuptools"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.setuptools.package-data]
+"my_package.data" = ["*.csv", "*.json"]

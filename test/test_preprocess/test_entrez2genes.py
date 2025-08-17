@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from enrichment_auc.preprocess import entrez2genes
+from pyfuncella.preprocess import entrez2genes
 
 
 def test_drops_nan_genes():

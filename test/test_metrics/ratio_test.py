@@ -1,6 +1,6 @@
 import numpy as np
 
-import enrichment_auc.metrics.ratio as ratio
+import pyfuncella.metrics.bina as bina
 
 
 def test_ratio():
@@ -17,17 +17,21 @@ def test_ratio():
             [0, 5, 0, 5, 0],
         ]
     )
-    res = ratio._ratio(geneset["geneset"], data, genes)
+    res = bina._ratio(geneset["geneset"], data, genes)
     assert np.array_equal(expected, res)
 
 
-def test_calculate_ratio():
+def test_calculate_bina():
     genes = ["a", "b", "c", "d", "e"]
     genesets = {"geneset": ["a", "b", "e", "f"], "geneset1": ["a", "b", "c"]}
 
-    expected = np.array(
+    # Raw ratios that would be calculated
+    ratios = np.array(
         [[2 / 3, 2 / 3, 1 / 3, 1.0, 0.0], [2 / 3, 2 / 3, 2 / 3, 3 / 3, 0 / 3]]
     )
+    # Transform to BINA scores: log((DR + 0.1) / (1 - DR + 0.1))
+    expected = np.log((ratios + 0.1) / (1 - ratios + 0.1))
+
     data = np.array(
         [
             [1.0, 2, 0, 4, 0],
@@ -37,5 +41,5 @@ def test_calculate_ratio():
             [0, 5, 0, 5, 0],
         ]
     )
-    res = ratio.RATIO(genesets, data, genes)
+    res = bina.BINA(genesets, data, genes)
     assert np.array_equal(expected, res)

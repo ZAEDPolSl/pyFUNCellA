@@ -1,6 +1,6 @@
 import numpy as np
 
-import enrichment_auc.metrics.rank as rank
+import pyfuncella.metrics.rank as rank
 
 
 def test_rank_genes():

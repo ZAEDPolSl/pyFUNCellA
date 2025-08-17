@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-import enrichment_auc.metrics.vision as vision
+import pyfuncella.metrics.vision as vision
 
 
 def test_gs_generator_raises_exception():

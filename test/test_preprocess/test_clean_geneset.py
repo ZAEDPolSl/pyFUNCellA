@@ -1,4 +1,4 @@
-from enrichment_auc.preprocess.clean_geneset import remove_redundant_genesets
+from pyfuncella.preprocess.clean_geneset import remove_redundant_genesets
 
 
 def test_remove_geneset():

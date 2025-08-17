@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v4
       - name: Run unit tests
         run: docker build . --file docker/unittest.dockerfile --tag unittest
         env:
@@ -16,15 +16,55 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        python-version: ["3.9", "3.10", "3.11"]
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+    - name: Set up R 4.4.2
+      uses: r-lib/actions/setup-r@v2
+      with:
+        r-version: '4.4.2'
+    - name: Install R development packages
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          r-base-dev \
+          libcurl4-openssl-dev \
+          libssl-dev \
+          libxml2-dev \
+          libgit2-dev \
+          libmagick++-dev
+    - name: Setup R packages using docker-compatible script
+      env:
+        GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+        R_REMOTES_NO_ERRORS_FROM_WARNINGS: "true"
+      run: |
+        R -e "install.packages('remotes', repos='https://cran.r-project.org')"
+        Rscript setup_docker_compatible_renv.R
+    - name: Verify R packages installation
+      run: |
+        R -e "
+        essential_packages <- c('BiocManager', 'rjson', 'GSVA', 'dpGMM', 'AUCell')
+        cat('Verifying R packages installation:\\n')
+        all_ok <- TRUE
+        for (pkg in essential_packages) {
+          if (require(pkg, quietly = TRUE, character.only = TRUE)) {
+            cat(sprintf('  ✓ %s\\n', pkg))
+          } else {
+            cat(sprintf('  ✗ %s (MISSING)\\n', pkg))
+            all_ok <- FALSE
+          }
+        }
+        if (!all_ok) {
+          cat('Some packages are missing, this will cause test failures\\n')
+          quit(status = 1)
+        }
+        cat('All essential R packages verified successfully\\n')
+        "
     - name: Install poetry
       run: pipx install poetry
 
-    - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
         cache: 'poetry'

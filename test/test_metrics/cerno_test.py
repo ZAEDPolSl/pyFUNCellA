@@ -1,7 +1,7 @@
 import numpy as np
 from statsmodels.stats.multitest import multipletests
 
-import enrichment_auc.metrics.cerno as cerno
+import pyfuncella.metrics.cerno as cerno
 
 
 def test_auc():
