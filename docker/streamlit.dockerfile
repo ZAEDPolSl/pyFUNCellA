@@ -54,6 +54,7 @@ COPY renv.lock ./
 COPY setup_docker_compatible_renv.R ./
 RUN chmod +x setup_docker_compatible_renv.R && Rscript setup_docker_compatible_renv.R
 
+
 COPY pyproject.toml poetry.lock README.md /app/
 COPY pyfuncella /app/pyfuncella
 
@@ -124,7 +125,13 @@ RUN /app/venv/bin/pip install /app/dist/*.whl
 # Install Streamlit and any extra dependencies for the app
 RUN /app/venv/bin/pip install streamlit
 
-# Copy app folder (tab modules) and main app.py
+
+# Copy Streamlit config for custom theme/colors
+COPY .streamlit /app/.streamlit
+
+
+
+# Copy app folder (tab modules), static, and main app.py
 COPY app/ /app/app/
 COPY app.py /app/app.py
 
