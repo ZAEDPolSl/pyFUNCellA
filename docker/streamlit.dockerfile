@@ -1,6 +1,8 @@
 # Build stage
 FROM rocker/r-ver:4.4.2 AS builder
 
+WORKDIR /FUNCellA
+
 RUN apt-get update && \
     apt-get install -y \
     software-properties-common \
@@ -49,27 +51,28 @@ RUN curl -sSL https://install.python-poetry.org | python3.11 -
 ENV PATH="${POETRY_HOME}/bin:${PATH}"
 RUN poetry self add poetry-plugin-export
 
-WORKDIR /app
 COPY renv.lock ./
 COPY setup_docker_compatible_renv.R ./
 RUN chmod +x setup_docker_compatible_renv.R && Rscript setup_docker_compatible_renv.R
 
 
-COPY pyproject.toml poetry.lock README.md /app/
-COPY pyfuncella /app/pyfuncella
+COPY pyproject.toml poetry.lock README.md ./
+COPY pyfuncella ./pyfuncella
 
 ENV R_HOME=/usr/lib/R
 ENV R_USER=/usr/lib/R/site-library
 
-RUN python3.11 -m venv /app/venv && \
-    . /app/venv/bin/activate && \
+RUN python3.11 -m venv /FUNCellA/venv && \
+    . /FUNCellA/venv/bin/activate && \
     pip install --upgrade pip && \
     poetry install
-ENV PATH="/app/venv/bin:$PATH"
+ENV PATH="/FUNCellA/venv/bin:$PATH"
 RUN poetry build
 
 # Runtime stage
 FROM rocker/r-ver:4.4.2 AS app
+
+WORKDIR /FUNCellA
 
 ENV PYTHONUNBUFFERED=TRUE
 RUN mkdir -p /root/.config/matplotlib &&\
@@ -100,12 +103,9 @@ RUN apt-get update &&\
     python3.11-dev &&\
     rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
-
-# Copy R packages and Python dependencies from builder
 COPY --from=builder /usr/local/lib/R/site-library /usr/local/lib/R/site-library
-COPY --from=builder /app/venv /app/venv
-ENV PATH="/app/venv/bin:$PATH"
+COPY --from=builder /FUNCellA/venv /FUNCellA/venv
+ENV PATH="/FUNCellA/venv/bin:$PATH"
 ENV R_LIBS_USER=/usr/local/lib/R/site-library
 
 ENV R_HOME=/usr/lib/R
@@ -117,25 +117,15 @@ RUN mkdir -p /usr/local/lib/R/etc
 RUN echo 'options(repos = c(CRAN = "https://cloud.r-project.org/"))' >> /usr/local/lib/R/etc/Rprofile.site
 RUN echo '.libPaths(c("/usr/local/lib/R/site-library", .libPaths()))' >> /usr/local/lib/R/etc/Rprofile.site
 
-# Copy built package and install
-COPY --from=builder /app/dist /app/dist
-RUN /app/venv/bin/pip install /app/dist/*.whl
+COPY --from=builder /FUNCellA/dist /FUNCellA/dist
+RUN /FUNCellA/venv/bin/pip install /FUNCellA/dist/*.whl
 
+RUN /FUNCellA/venv/bin/pip install streamlit
 
-# Install Streamlit and any extra dependencies for the app
-RUN /app/venv/bin/pip install streamlit
-
-
-# Copy Streamlit config for custom theme/colors
-COPY .streamlit /app/.streamlit
-
-
-
-# Copy app folder (tab modules), static, and main app.py
-COPY app/ /app/app/
-COPY app.py /app/app.py
+COPY .streamlit /FUNCellA/.streamlit
+COPY app/ /FUNCellA/app/
+COPY app.py /FUNCellA/app.py
 
 EXPOSE 8501
 
-# Simple Streamlit startup
-CMD ["/app/venv/bin/streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.headless=true"]
+CMD ["/FUNCellA/venv/bin/streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.headless=true", "--server.baseUrlPath=FUNCellA", "--server.enableCORS=false", "--server.enableXsrfProtection=false"]
