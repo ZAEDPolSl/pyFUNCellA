@@ -6,6 +6,11 @@ authors = ["amrukwa <a.mrukwa00@gmail.com>"]
 license = "Apache-2.0"
 readme = "README.md"
 
+include = [
+    "pyfuncella/data/*.json",
+    "pyfuncella/data/*.csv"
+]
+
 [tool.poetry.build]
 generate-setup-file = true
 
@@ -34,6 +39,3 @@ requires = ["poetry-core>=1.0.0",
             "numpy>=1.24.3",
             "setuptools"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.setuptools.package-data]
-"my_package.data" = ["*.csv", "*.json"]
