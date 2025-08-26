@@ -5,7 +5,13 @@ import io
 
 def load_csv(file):
     content = file.getvalue().decode()
-    sep = "\t" if "\t" in content.splitlines()[0] else ","
+    first_line = content.splitlines()[0]
+    if "\t" in first_line:
+        sep = "\t"
+    elif ";" in first_line:
+        sep = ";"
+    else:
+        sep = ","
     lines = content.splitlines()
     genesets = {}
     for line in lines:
@@ -21,10 +27,16 @@ def load_csv(file):
 def upload_tab():
     st.header("Step 1: Upload Data and Genesets")
     data_file = st.file_uploader(
-        "Upload gene expression data (CSV)", type=["csv"], key="data_file"
+        "Upload gene expression data (CSV)",
+        type=["csv"],
+        key="data_file",
+        help="The genes should be in rows, the patients in columns. The application also expects gene names and patient identifiers.",
     )
     geneset_file = st.file_uploader(
-        "Upload genesets file (JSON or CSV)", type=["json", "csv"], key="geneset_file"
+        "Upload genesets file (JSON or CSV)",
+        type=["json", "csv"],
+        key="geneset_file",
+        help="For csv, the genes should be in rows. Each row should start with the pathway name.",
     )
     geneset_source = st.radio(
         "Genesets source",
