@@ -30,13 +30,13 @@ def upload_tab():
         "Upload gene expression data (CSV)",
         type=["csv"],
         key="data_file",
-        help="The genes should be in rows, the patients in columns. The application also expects gene names and patient identifiers.",
+        help="The genes should be in rows, the patients in columns. The application also expects gene names and column names.",
     )
     geneset_file = st.file_uploader(
         "Upload genesets file (JSON or CSV)",
         type=["json", "csv"],
         key="geneset_file",
-        help="For csv, the genes should be in rows. Each row should start with the pathway name.",
+        help="The csv gene set input should contain each pathway genes/markers in row with name as first element.",
     )
     geneset_source = st.radio(
         "Genesets source",

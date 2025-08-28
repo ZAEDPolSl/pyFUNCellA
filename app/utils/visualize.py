@@ -161,12 +161,21 @@ def visualize_dist(result, method, selected_pathway):
         )
         gmm_thresholds = st.session_state.get("gmm_thresholds")
         thr = None
+        clust_sig = None
         if gmm_thresholds:
             thr = gmm_thresholds.get(pathway_name, {}).get("Kmeans_thr", float("nan"))
+            all_thr = gmm_thresholds.get(pathway_name, {}).get("All_thr", [])
+            if thr in all_thr:
+                clust_sig = all_thr.index(thr) + 1
         if thr is None:
             thr = float("nan")
         fig = plot_pas_distribution(
-            pas_scores, pas_method, pathway_name, thr, gmm=gmm_model
+            pas_scores,
+            pas_method,
+            pathway_name,
+            thr,
+            gmm=gmm_model,
+            clust_sig=clust_sig,
         )
 
     if fig is not None:

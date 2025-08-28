@@ -3,6 +3,7 @@ from plotly.subplots import make_subplots
 import plotly.colors as pc
 import numpy as np
 import pandas as pd
+from .color_palette import get_cluster_palette
 
 
 def scatterplot_subplots(
@@ -44,7 +45,6 @@ def scatterplot_subplots(
         subplot_titles=subplot_titles,
         vertical_spacing=0.12,
     )
-
     current_row = 1
 
     if has_continuous:
@@ -82,8 +82,9 @@ def scatterplot_subplots(
 
     if has_binary:
         binary_df = pd.DataFrame({"x": x, "y": y, "label": binary_labels})
+        palette = get_cluster_palette(2, 1)
         for label, color, name in zip(
-            [0, 1], ["blue", "red"], ["Non significant", "Significant"]
+            [0, 1], palette, ["Non significant", "Significant"]
         ):
             subset = binary_df[binary_df["label"] == label]
             fig.add_trace(
@@ -104,18 +105,29 @@ def scatterplot_subplots(
     if has_ranked:
         ranked_df = pd.DataFrame({"x": x, "y": y, "label": ranked_labels})
         unique_ranks = sorted(np.unique(ranked_labels))
-        color_cycle = (
-            pc.qualitative.Plotly
-            * ((len(unique_ranks) // len(pc.qualitative.Plotly)) + 1)
-        )[: len(unique_ranks)]
-        for i, rank in enumerate(unique_ranks):
+        n_clusters = len(unique_ranks)
+        if has_binary and binary_labels is not None:
+            # A group is significant if any of its binary labels is 1
+            unsig_ranks = [
+                rank
+                for rank in unique_ranks
+                if not np.any(np.array(binary_labels)[np.array(ranked_labels) == rank])
+            ]
+            sig_ranks = [rank for rank in unique_ranks if rank not in unsig_ranks]
+            n_unsig = len(unsig_ranks)
+            ordered_ranks = unsig_ranks + sig_ranks
+        else:
+            n_unsig = 1 if n_clusters > 1 else 0
+            ordered_ranks = unique_ranks
+        palette = get_cluster_palette(n_clusters, n_unsig)
+        for i, rank in enumerate(ordered_ranks):
             subset = ranked_df[ranked_df["label"] == rank]
             fig.add_trace(
                 go.Scatter(
                     x=subset["x"],
                     y=subset["y"],
                     mode="markers",
-                    marker=dict(color=color_cycle[i], size=8),
+                    marker=dict(color=palette[i], size=8),
                     name=f"Group {rank}",
                     legendgroup="ranked",
                     showlegend=True,
