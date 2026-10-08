@@ -89,6 +89,9 @@ If you encounter errors related to missing R package dpGMM:
    - The package will attempt automatic installation
    - Alternatively, download and install manually from the repository environment.
 
+## Citation
+Zyla, J., Mrukwa, A., Bilska, A. G., Szumala, K., Polanska, J., & Marczyk, M. (2026). FUNCellA: A Tool for Single-Sample Enrichment Analysis and Relative Pathway Activity Estimation in Single-Cell RNA Sequencing Data. Computational and Structural Biotechnology Journal, 35(1), 0053.
+
 ## REFERENCES
 Aibar, S., Bravo González-Blas, C., Moerman, T., Huynh-Thu, V.A., Imrichová, H., Hulselmans, G., Rambow, F., Marine, J.C., Geurts, P., Aerts, J., van den Oord, J., Kalender Atak, Z., Wouters, J., & Aerts, S (2017). SCENIC: Single-cell regulatory network inference and clustering. *Nature Methods*, *14*, 1083–1086.\
 Barbie, D.A., Tamayo, P., Boehm, J.S., et al. (2009). Systematic RNA interference reveals that oncogenic KRAS-driven cancers require TBK1. *Nature*, *462*(7273), 108–112.\
